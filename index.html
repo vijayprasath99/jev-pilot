@@ -8,35 +8,174 @@
 </head>
 <body>
 
-<div id="game-container">
-  <div id="hud">
-    <div>Score: <span id="score">0</span></div>
-    <div>High Score: <span id="high-score">0</span></div>
+<div id="game-wrapper">
+  <div id="game-container">
+    <div id="hud">
+      <div>Score: <span id="score">0</span></div>
+      <div>High: <span id="high-score">0</span></div>
+    </div>
+
+    <button id="dev-stats-btn" class="hud-dev-btn" type="button" aria-expanded="false" title="Toggle Dev Stats (Hotkey: ` or F2)">
+      <span class="hud-dev-dot"></span>
+      <span>DEV</span>
+    </button>
+
+    <canvas id="game-canvas" width="400" height="600"></canvas>
+
+    <div id="start-screen" class="overlay">
+      <h1>Infinite Driver</h1>
+      <p>Use the Left / Right arrow keys (or A / D) to switch lanes and dodge the oncoming obstacles.</p>
+      <p>Survive as long as you can. Your score rises the longer you stay alive!</p>
+      <p>Press <kbd>Space</kbd> or <kbd>Esc</kbd> to pause.</p>
+      <button id="start-btn">Start</button>
+    </div>
+
+    <div id="pause-screen" class="overlay hidden">
+      <h1>Game Paused</h1>
+      <p>Game is currently paused.</p>
+      <p>Press <kbd>Space</kbd> or <kbd>Esc</kbd> to resume.</p>
+      <button id="resume-btn">Resume</button>
+    </div>
+
+    <div id="game-over-screen" class="overlay hidden">
+      <h1>Game Over</h1>
+      <div class="score-line">Final Score: <span id="final-score">0</span></div>
+      <div class="score-line">High Score: <span id="final-high-score">0</span></div>
+      <button id="restart-btn">Play Again</button>
+    </div>
   </div>
 
-  <canvas id="game-canvas" width="400" height="600"></canvas>
+  <!-- Developer Stats Panel (Shown outside of game to the right) -->
+  <aside id="dev-panel" class="dev-panel hidden" aria-label="Developer Stats">
+    <div class="dev-panel-header">
+      <div class="dev-title-wrap">
+        <span class="dev-indicator-dot" id="dev-indicator-dot"></span>
+        <span class="dev-panel-title">DEV STATS</span>
+      </div>
+      <div class="dev-panel-actions">
+        <span id="dev-status-badge" class="dev-badge badge-idle">READY</span>
+        <button id="dev-panel-close-btn" class="dev-close-btn" type="button" title="Close Dev Stats">✕</button>
+      </div>
+    </div>
 
-  <div id="start-screen" class="overlay">
-    <h1>Infinite Driver</h1>
-    <p>Use the Left / Right arrow keys (or A / D) to switch lanes and dodge the oncoming obstacles.</p>
-    <p>Survive as long as you can. Your score rises the longer you stay alive!</p>
-    <p>Press <kbd>Space</kbd> or <kbd>Esc</kbd> to pause.</p>
-    <button id="start-btn">Start</button>
-  </div>
+    <div class="dev-panel-body">
+      <!-- Performance Section -->
+      <section class="dev-section">
+        <div class="dev-section-title">Performance</div>
+        <div class="dev-grid-2">
+          <div class="dev-metric-card primary">
+            <span class="dev-metric-label">Frame Rate</span>
+            <div class="dev-fps-value" id="dev-fps">--</div>
+            <span class="dev-metric-sub" id="dev-frame-time">-- ms/f</span>
+          </div>
+          <div class="dev-metric-card">
+            <span class="dev-metric-label">FPS Range</span>
+            <div class="dev-metric-value" id="dev-avg-fps">-- avg</div>
+            <span class="dev-metric-sub" id="dev-fps-min-max">Min: -- | Max: --</span>
+          </div>
+        </div>
+      </section>
 
-  <div id="pause-screen" class="overlay hidden">
-    <h1>Game Paused</h1>
-    <p>Game is currently paused.</p>
-    <p>Press <kbd>Space</kbd> or <kbd>Esc</kbd> to resume.</p>
-    <button id="resume-btn">Resume</button>
-  </div>
+      <!-- Game Stats Section -->
+      <section class="dev-section">
+        <div class="dev-section-title">Game Stats</div>
+        <div class="dev-table">
+          <div class="dev-table-row">
+            <span class="dev-row-label">Game Speed</span>
+            <span class="dev-row-value dev-highlight-cyan" id="dev-speed">4.00 px/f</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Run Duration</span>
+            <span class="dev-row-value" id="dev-duration">00:00.0</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Frame Count</span>
+            <span class="dev-row-value" id="dev-frame">0</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Score</span>
+            <span class="dev-row-value" id="dev-score">0</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">High Score</span>
+            <span class="dev-row-value dev-highlight-amber" id="dev-highscore">0</span>
+          </div>
+        </div>
+      </section>
 
-  <div id="game-over-screen" class="overlay hidden">
-    <h1>Game Over</h1>
-    <div class="score-line">Final Score: <span id="final-score">0</span></div>
-    <div class="score-line">High Score: <span id="final-high-score">0</span></div>
-    <button id="restart-btn">Play Again</button>
-  </div>
+      <!-- Player Details Section -->
+      <section class="dev-section">
+        <div class="dev-section-title">Player Vehicle</div>
+        <div class="dev-table">
+          <div class="dev-table-row">
+            <span class="dev-row-label">Active Lane</span>
+            <span class="dev-row-value dev-highlight-cyan" id="dev-lane">Lane 1 (Center)</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Position (X, Y)</span>
+            <span class="dev-row-value" id="dev-pos">200, 500</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Hitbox Size</span>
+            <span class="dev-row-value">50 × 80 px</span>
+          </div>
+        </div>
+        <!-- Visual 3-Lane Track -->
+        <div class="dev-lane-track" title="Active Lane Tracker">
+          <div class="dev-lane-cell" id="lane-box-0">Lane 0</div>
+          <div class="dev-lane-cell active" id="lane-box-1">Lane 1 (Player)</div>
+          <div class="dev-lane-cell" id="lane-box-2">Lane 2</div>
+        </div>
+      </section>
+
+      <!-- Obstacles & Spawning Section -->
+      <section class="dev-section">
+        <div class="dev-section-title">Traffic & Spawning</div>
+        <div class="dev-table">
+          <div class="dev-table-row">
+            <span class="dev-row-label">Active Obstacles</span>
+            <span class="dev-row-value dev-highlight-cyan" id="dev-obs-active">0</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Obstacles Evaded</span>
+            <span class="dev-row-value" id="dev-obs-evaded">0</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Spawn Countdown</span>
+            <span class="dev-row-value" id="dev-spawn-timer">0 / 70f</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Spawn Interval</span>
+            <span class="dev-row-value" id="dev-spawn-interval">70 frames</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Last Spawn Lane</span>
+            <span class="dev-row-value" id="dev-last-lane">None</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Debug Controls Section -->
+      <section class="dev-section">
+        <div class="dev-section-title">Debug Controls</div>
+        <div class="dev-toggles">
+          <label class="dev-toggle-row">
+            <input type="checkbox" id="dev-toggle-hitboxes">
+            <span class="dev-toggle-slider"></span>
+            <span class="dev-toggle-label">Render Hitboxes & IDs</span>
+          </label>
+          <label class="dev-toggle-row">
+            <input type="checkbox" id="dev-toggle-godmode">
+            <span class="dev-toggle-slider"></span>
+            <span class="dev-toggle-label">God Mode (Invincible)</span>
+          </label>
+        </div>
+        <div class="dev-btn-row">
+          <button id="dev-reset-highscore-btn" class="dev-sub-btn" type="button">Reset High Score</button>
+        </div>
+      </section>
+    </div>
+  </aside>
 </div>
 
 <script src="script.js"></script>

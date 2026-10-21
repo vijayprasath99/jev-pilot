@@ -31,6 +31,36 @@
   const finalScoreEl = document.getElementById('final-score');
   const finalHighScoreEl = document.getElementById('final-high-score');
 
+  // Dev Stats DOM Elements
+  const devStatsBtn = document.getElementById('dev-stats-btn');
+  const devPanel = document.getElementById('dev-panel');
+  const devPanelCloseBtn = document.getElementById('dev-panel-close-btn');
+  const devStatusBadge = document.getElementById('dev-status-badge');
+  const devFpsEl = document.getElementById('dev-fps');
+  const devFrameTimeEl = document.getElementById('dev-frame-time');
+  const devAvgFpsEl = document.getElementById('dev-avg-fps');
+  const devFpsMinMaxEl = document.getElementById('dev-fps-min-max');
+  const devSpeedEl = document.getElementById('dev-speed');
+  const devDurationEl = document.getElementById('dev-duration');
+  const devFrameEl = document.getElementById('dev-frame');
+  const devScoreEl = document.getElementById('dev-score');
+  const devHighscoreEl = document.getElementById('dev-highscore');
+  const devLaneEl = document.getElementById('dev-lane');
+  const devPosEl = document.getElementById('dev-pos');
+  const laneCells = [
+    document.getElementById('lane-box-0'),
+    document.getElementById('lane-box-1'),
+    document.getElementById('lane-box-2')
+  ];
+  const devObsActiveEl = document.getElementById('dev-obs-active');
+  const devObsEvadedEl = document.getElementById('dev-obs-evaded');
+  const devSpawnTimerEl = document.getElementById('dev-spawn-timer');
+  const devSpawnIntervalEl = document.getElementById('dev-spawn-interval');
+  const devLastLaneEl = document.getElementById('dev-last-lane');
+  const devToggleHitboxes = document.getElementById('dev-toggle-hitboxes');
+  const devToggleGodmode = document.getElementById('dev-toggle-godmode');
+  const devResetHighscoreBtn = document.getElementById('dev-reset-highscore-btn');
+
   function laneCenterX(laneIndex) {
     return ROAD_MARGIN + LANE_WIDTH * laneIndex + LANE_WIDTH / 2;
   }
@@ -57,6 +87,141 @@
     lastLaneSpawned: -1
   };
 
+  // Developer Settings and Performance Tracking
+  let devStatsVisible = false;
+  const devSettings = {
+    showHitboxes: false,
+    godMode: false
+  };
+
+  let lastFrameTime = performance.now();
+  let fpsHistory = [];
+  let currentFps = 60;
+  let currentFrameTime = 16.6;
+  let minFps = Infinity;
+  let maxFps = 0;
+  let runStartTime = null;
+  let runPauseStartTime = null;
+  let totalPausedDuration = 0;
+  let obstaclesEvaded = 0;
+  let lastDevDomUpdate = 0;
+  let devIdleInterval = null;
+
+  function getRunDurationMs() {
+    if (!runStartTime) return 0;
+    const now = (state.paused && runPauseStartTime) ? runPauseStartTime : performance.now();
+    return Math.max(0, now - runStartTime - totalPausedDuration);
+  }
+
+  function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const tenths = Math.floor((ms % 1000) / 100);
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${tenths}`;
+  }
+
+  function updateDevPanel(now) {
+    if (!devStatsVisible) return;
+    if (!now) now = performance.now();
+
+    // 1. Performance Section
+    if (devFpsEl) {
+      if (state.running && !state.paused) {
+        devFpsEl.textContent = currentFps;
+        devFpsEl.className = 'dev-fps-value ' + (currentFps >= 50 ? 'good' : currentFps >= 30 ? 'warn' : 'bad');
+        if (devFrameTimeEl) devFrameTimeEl.textContent = currentFrameTime.toFixed(1) + ' ms/f';
+        const avg = fpsHistory.length ? Math.round(fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length) : currentFps;
+        if (devAvgFpsEl) devAvgFpsEl.textContent = avg + ' avg';
+        if (devFpsMinMaxEl) {
+          const minText = minFps === Infinity ? '--' : minFps;
+          const maxText = maxFps === 0 ? '--' : maxFps;
+          devFpsMinMaxEl.textContent = `Min: ${minText} | Max: ${maxText}`;
+        }
+      } else if (state.paused) {
+        devFpsEl.textContent = 'PAUSED';
+        devFpsEl.className = 'dev-fps-value warn';
+        if (devFrameTimeEl) devFrameTimeEl.textContent = '0.0 ms/f';
+      } else {
+        devFpsEl.textContent = '--';
+        devFpsEl.className = 'dev-fps-value';
+        if (devFrameTimeEl) devFrameTimeEl.textContent = '-- ms/f';
+        if (devAvgFpsEl) devAvgFpsEl.textContent = '-- avg';
+        if (devFpsMinMaxEl) devFpsMinMaxEl.textContent = 'Min: -- | Max: --';
+      }
+    }
+
+    // 2. Status Badge
+    if (devStatusBadge) {
+      if (state.running && !state.paused) {
+        devStatusBadge.textContent = 'RUNNING';
+        devStatusBadge.className = 'dev-badge badge-running';
+      } else if (state.paused) {
+        devStatusBadge.textContent = 'PAUSED';
+        devStatusBadge.className = 'dev-badge badge-paused';
+      } else if (gameOverScreen && !gameOverScreen.classList.contains('hidden')) {
+        devStatusBadge.textContent = 'GAME OVER';
+        devStatusBadge.className = 'dev-badge badge-gameover';
+      } else {
+        devStatusBadge.textContent = 'READY';
+        devStatusBadge.className = 'dev-badge badge-idle';
+      }
+    }
+
+    // 3. Game Stats Section
+    if (devSpeedEl) devSpeedEl.textContent = state.speed.toFixed(2) + ' px/f';
+    if (devDurationEl) devDurationEl.textContent = formatTime(getRunDurationMs());
+    if (devFrameEl) devFrameEl.textContent = state.frame;
+    if (devScoreEl) devScoreEl.textContent = state.score;
+    if (devHighscoreEl) devHighscoreEl.textContent = highScore;
+
+    // 4. Player Vehicle Section
+    const laneLabels = ['Lane 0 (Left)', 'Lane 1 (Center)', 'Lane 2 (Right)'];
+    if (devLaneEl) devLaneEl.textContent = laneLabels[state.playerLane] || `Lane ${state.playerLane}`;
+    if (devPosEl) devPosEl.textContent = `${Math.round(laneCenterX(state.playerLane))}, ${PLAYER_Y}`;
+
+    laneCells.forEach((cell, idx) => {
+      if (cell) cell.classList.toggle('active', idx === state.playerLane);
+    });
+
+    // 5. Traffic & Spawning Section
+    if (devObsActiveEl) devObsActiveEl.textContent = state.obstacles.length;
+    if (devObsEvadedEl) devObsEvadedEl.textContent = obstaclesEvaded;
+    const remainingSpawn = Math.max(0, state.spawnInterval - state.spawnTimer);
+    if (devSpawnTimerEl) devSpawnTimerEl.textContent = `${remainingSpawn} / ${state.spawnInterval}f`;
+    if (devSpawnIntervalEl) devSpawnIntervalEl.textContent = `${state.spawnInterval} frames`;
+    if (devLastLaneEl) devLastLaneEl.textContent = state.lastLaneSpawned >= 0 ? `Lane ${state.lastLaneSpawned}` : 'None';
+  }
+
+  function setDevStatsVisible(show) {
+    devStatsVisible = show;
+    if (devStatsBtn) {
+      devStatsBtn.classList.toggle('active', show);
+      devStatsBtn.setAttribute('aria-expanded', String(show));
+    }
+    if (devPanel) {
+      devPanel.classList.toggle('hidden', !show);
+    }
+
+    if (show) {
+      updateDevPanel(performance.now());
+      if (!state.running || state.paused) {
+        if (!devIdleInterval) {
+          devIdleInterval = setInterval(() => {
+            if (!state.running || state.paused) {
+              updateDevPanel(performance.now());
+            }
+          }, 150);
+        }
+      }
+    } else {
+      if (devIdleInterval) {
+        clearInterval(devIdleInterval);
+        devIdleInterval = null;
+      }
+    }
+  }
+
   function resetState() {
     state.running = true;
     state.paused = false;
@@ -70,6 +235,15 @@
     state.frame = 0;
     state.lastLaneSpawned = -1;
     scoreEl.textContent = '0';
+
+    // Reset tracking counters
+    obstaclesEvaded = 0;
+    runStartTime = performance.now();
+    runPauseStartTime = null;
+    totalPausedDuration = 0;
+    minFps = Infinity;
+    maxFps = 0;
+    fpsHistory = [];
   }
 
   function movePlayer(direction) {
@@ -77,6 +251,9 @@
     const newLane = state.playerLane + direction;
     if (newLane >= 0 && newLane < LANE_COUNT) {
       state.playerLane = newLane;
+      if (devStatsVisible) {
+        updateDevPanel(performance.now());
+      }
     }
   }
 
@@ -126,6 +303,10 @@
     finalScoreEl.textContent = state.score;
     finalHighScoreEl.textContent = highScore;
     gameOverScreen.classList.remove('hidden');
+
+    if (devStatsVisible) {
+      updateDevPanel(performance.now());
+    }
   }
 
   function drawRoad() {
@@ -168,12 +349,46 @@
   function drawPlayer() {
     const x = laneCenterX(state.playerLane) - PLAYER_WIDTH / 2;
     drawCarShape(x, PLAYER_Y, PLAYER_WIDTH, PLAYER_HEIGHT, '#3a86ff', '#cfe8ff');
+
+    // God Mode visual shield aura
+    if (devSettings.godMode) {
+      ctx.save();
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(x - 4, PLAYER_Y - 4, PLAYER_WIDTH + 8, PLAYER_HEIGHT + 8);
+      ctx.restore();
+    }
+
+    // Hitbox visualization overlay
+    if (devSettings.showHitboxes) {
+      ctx.save();
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, PLAYER_Y, PLAYER_WIDTH, PLAYER_HEIGHT);
+      ctx.fillStyle = '#10b981';
+      ctx.font = '10px "Chakra Petch", monospace';
+      ctx.fillText(`PLAYER (L${state.playerLane})`, x, PLAYER_Y - 6);
+      ctx.restore();
+    }
   }
 
   function drawObstacles() {
-    state.obstacles.forEach(function (obs) {
+    state.obstacles.forEach(function (obs, i) {
       const x = laneCenterX(obs.lane) - OBSTACLE_WIDTH / 2;
       drawCarShape(x, obs.y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, obs.color, '#222');
+
+      // Hitbox visualization overlay
+      if (devSettings.showHitboxes) {
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, obs.y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = '10px "Chakra Petch", monospace';
+        ctx.fillText(`OBS #${i + 1} (L${obs.lane})`, x, obs.y - 6);
+        ctx.restore();
+      }
     });
   }
 
@@ -191,12 +406,17 @@
       state.obstacles[i].y += state.speed;
       if (state.obstacles[i].y > CANVAS_HEIGHT) {
         state.obstacles.splice(i, 1);
+        obstaclesEvaded++;
       }
     }
 
     if (checkCollisions()) {
-      endGame();
-      return;
+      if (devSettings.godMode) {
+        // God Mode active: bypass crash
+      } else {
+        endGame();
+        return;
+      }
     }
 
     state.score += 1;
@@ -217,13 +437,41 @@
     drawPlayer();
   }
 
-  function gameLoop() {
+  function gameLoop(timestamp) {
+    if (!timestamp) timestamp = performance.now();
+    const delta = timestamp - lastFrameTime;
+    lastFrameTime = timestamp;
+
+    if (delta > 0 && delta < 1000) {
+      currentFrameTime = delta;
+      const instantFps = 1000 / delta;
+      fpsHistory.push(instantFps);
+      if (fpsHistory.length > 30) fpsHistory.shift();
+
+      const avg = fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length;
+      currentFps = Math.round(avg);
+
+      if (state.running && !state.paused && state.frame > 20) {
+        if (currentFps < minFps) minFps = currentFps;
+        if (currentFps > maxFps) maxFps = currentFps;
+      }
+    }
+
     if (state.running && !state.paused) {
       update();
       render();
+
+      if (devStatsVisible && (timestamp - lastDevDomUpdate > 100)) {
+        updateDevPanel(timestamp);
+        lastDevDomUpdate = timestamp;
+      }
+
       requestAnimationFrame(gameLoop);
     } else {
       render();
+      if (devStatsVisible) {
+        updateDevPanel(timestamp);
+      }
     }
   }
 
@@ -232,9 +480,17 @@
 
     state.paused = !state.paused;
     if (state.paused) {
+      runPauseStartTime = performance.now();
       if (pauseScreen) pauseScreen.classList.remove('hidden');
+      if (devStatsVisible) updateDevPanel(performance.now());
     } else {
+      if (runPauseStartTime) {
+        totalPausedDuration += performance.now() - runPauseStartTime;
+        runPauseStartTime = null;
+      }
+      lastFrameTime = performance.now();
       if (pauseScreen) pauseScreen.classList.add('hidden');
+      if (devStatsVisible) updateDevPanel(performance.now());
       requestAnimationFrame(gameLoop);
     }
   }
@@ -245,10 +501,70 @@
     if (pauseScreen) pauseScreen.classList.add('hidden');
     resetState();
     render();
+    lastFrameTime = performance.now();
+    if (devStatsVisible) updateDevPanel(performance.now());
     requestAnimationFrame(gameLoop);
   }
 
+  // Dev Stats Control Listeners
+  if (devStatsBtn) {
+    devStatsBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setDevStatsVisible(!devStatsVisible);
+      devStatsBtn.blur();
+    });
+  }
+
+  if (devPanelCloseBtn) {
+    devPanelCloseBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setDevStatsVisible(false);
+      devPanelCloseBtn.blur();
+    });
+  }
+
+  if (devToggleHitboxes) {
+    devToggleHitboxes.addEventListener('change', function () {
+      devSettings.showHitboxes = devToggleHitboxes.checked;
+      render();
+      devToggleHitboxes.blur();
+    });
+  }
+
+  if (devToggleGodmode) {
+    devToggleGodmode.addEventListener('change', function () {
+      devSettings.godMode = devToggleGodmode.checked;
+      render();
+      devToggleGodmode.blur();
+    });
+  }
+
+  if (devResetHighscoreBtn) {
+    devResetHighscoreBtn.addEventListener('click', function () {
+      highScore = 0;
+      try {
+        localStorage.setItem(HIGH_SCORE_KEY, '0');
+      } catch (e) {}
+      highScoreEl.textContent = '0';
+      finalHighScoreEl.textContent = '0';
+      if (devHighscoreEl) devHighscoreEl.textContent = '0';
+      devResetHighscoreBtn.blur();
+    });
+  }
+
   document.addEventListener('keydown', function (e) {
+    // Dev Stats hotkey toggle (` or ~ or F2)
+    if (e.key === '`' || e.key === '~' || e.key === 'F2') {
+      e.preventDefault();
+      setDevStatsVisible(!devStatsVisible);
+      return;
+    }
+
+    // Ignore game keys if the focus is on a dev panel control
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') && e.target.closest('#dev-panel')) {
+      return;
+    }
+
     if (startScreen && !startScreen.classList.contains('hidden')) {
       startGame();
       return;
@@ -285,4 +601,5 @@
   if (resumeBtn) resumeBtn.addEventListener('click', togglePause);
 
   render();
+  updateDevPanel(performance.now());
 })();
