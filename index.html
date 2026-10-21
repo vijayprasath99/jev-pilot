@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infinite Driver</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="game-container">
+  <div id="hud">
+    <div>Score: <span id="score">0</span></div>
+    <div>High Score: <span id="high-score">0</span></div>
+  </div>
+
+  <canvas id="game-canvas" width="400" height="600"></canvas>
+
+  <div id="start-screen" class="overlay">
+    <h1>Infinite Driver</h1>
+    <p>Use the Left / Right arrow keys (or A / D) to switch lanes and dodge the oncoming obstacles.</p>
+    <p>Survive as long as you can. Your score rises the longer you stay alive!</p>
+    <p>Press <kbd>Space</kbd> or <kbd>Esc</kbd> to pause.</p>
+    <button id="start-btn">Start</button>
+  </div>
+
+  <div id="pause-screen" class="overlay hidden">
+    <h1>Game Paused</h1>
+    <p>Game is currently paused.</p>
+    <p>Press <kbd>Space</kbd> or <kbd>Esc</kbd> to resume.</p>
+    <button id="resume-btn">Resume</button>
+  </div>
+
+  <div id="game-over-screen" class="overlay hidden">
+    <h1>Game Over</h1>
+    <div class="score-line">Final Score: <span id="final-score">0</span></div>
+    <div class="score-line">High Score: <span id="final-high-score">0</span></div>
+    <button id="restart-btn">Play Again</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
