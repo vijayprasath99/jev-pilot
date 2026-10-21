@@ -1,11 +1,13 @@
 {
-  "name": "test_1",
+  "name": "unlimited_runner",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Infinite Driver web game service",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
+  "keywords": [],
   "author": "",
   "license": "ISC"
 }
