@@ -51,174 +51,226 @@
     </div>
   </div>
 
-  <!-- Developer Stats Panel (Shown outside of game to the right) -->
-  <aside id="dev-panel" class="dev-panel hidden" aria-label="Developer Stats">
+  <!-- Developer & JEV Stats Dashboard -->
+  <aside id="dev-panel" class="dev-panel hidden" aria-label="Developer & JEV Stats">
     <div class="dev-panel-header">
       <div class="dev-title-wrap">
         <span class="dev-indicator-dot" id="dev-indicator-dot"></span>
-        <span class="dev-panel-title">DEV STATS</span>
+        <span class="dev-panel-title">JEV AI & TELEMETRY</span>
       </div>
+
+      <div class="dev-view-tabs" role="tablist">
+        <button id="tab-split-view" class="dev-view-tab active" type="button" title="Split Game & JEV View">⚡ Split</button>
+        <button id="tab-jev-view" class="dev-view-tab" type="button" title="Full JEV AI Focus">🤖 JEV Focus</button>
+        <button id="tab-game-view" class="dev-view-tab" type="button" title="Game Engine Only">🎮 Game</button>
+      </div>
+
       <div class="dev-panel-actions">
         <span id="dev-status-badge" class="dev-badge badge-idle">READY</span>
         <button id="dev-panel-close-btn" class="dev-close-btn" type="button" title="Close Dev Stats">✕</button>
       </div>
     </div>
 
-    <div class="dev-panel-body">
-      <!-- Performance Section -->
-      <section class="dev-section">
-        <div class="dev-section-title">Performance</div>
-        <div class="dev-grid-2">
-          <div class="dev-metric-card primary">
-            <span class="dev-metric-label">Frame Rate</span>
-            <div class="dev-fps-value" id="dev-fps">--</div>
-            <span class="dev-metric-sub" id="dev-frame-time">-- ms/f</span>
+    <div class="dev-panel-body" id="dev-panel-body">
+      <!-- Left Column: Compact Game Stats & Debug -->
+      <div class="dev-col-compact" id="col-game-stats">
+        <!-- Compact Performance -->
+        <section class="dev-compact-card">
+          <div class="dev-compact-title">Performance</div>
+          <div class="dev-compact-perf">
+            <div>
+              <span class="dev-fps-value" id="dev-fps">--</span>
+              <span class="dev-unit">FPS</span>
+            </div>
+            <div class="dev-perf-meta">
+              <span id="dev-frame-time">-- ms/f</span>
+              <span id="dev-avg-fps">-- avg</span>
+            </div>
           </div>
-          <div class="dev-metric-card">
-            <span class="dev-metric-label">FPS Range</span>
-            <div class="dev-metric-value" id="dev-avg-fps">-- avg</div>
-            <span class="dev-metric-sub" id="dev-fps-min-max">Min: -- | Max: --</span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Game Stats Section -->
-      <section class="dev-section">
-        <div class="dev-section-title">Game Stats</div>
-        <div class="dev-table">
-          <div class="dev-table-row">
-            <span class="dev-row-label">Game Speed</span>
-            <span class="dev-row-value dev-highlight-cyan" id="dev-speed">4.00 px/f</span>
+        <!-- Compact Game Stats -->
+        <section class="dev-compact-card">
+          <div class="dev-compact-title">Game Engine</div>
+          <div class="dev-compact-table">
+            <div class="dev-compact-row">
+              <span>Speed</span>
+              <span id="dev-speed" class="dev-highlight-cyan">4.00 px/f</span>
+            </div>
+            <div class="dev-compact-row">
+              <span>Duration</span>
+              <span id="dev-duration">00:00.0</span>
+            </div>
+            <div class="dev-compact-row">
+              <span>Frames</span>
+              <span id="dev-frame">0</span>
+            </div>
+            <div class="dev-compact-row">
+              <span>Score</span>
+              <span id="dev-score">0</span>
+            </div>
+            <div class="dev-compact-row">
+              <span>High</span>
+              <span id="dev-highscore" class="dev-highlight-amber">0</span>
+            </div>
           </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Run Duration</span>
-            <span class="dev-row-value" id="dev-duration">00:00.0</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Frame Count</span>
-            <span class="dev-row-value" id="dev-frame">0</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Score</span>
-            <span class="dev-row-value" id="dev-score">0</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">High Score</span>
-            <span class="dev-row-value dev-highlight-amber" id="dev-highscore">0</span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Player Details Section -->
-      <section class="dev-section">
-        <div class="dev-section-title">Player Vehicle</div>
-        <div class="dev-table">
-          <div class="dev-table-row">
-            <span class="dev-row-label">Active Lane</span>
-            <span class="dev-row-value dev-highlight-cyan" id="dev-lane">Lane 1 (Center)</span>
+        <!-- Compact Player State -->
+        <section class="dev-compact-card">
+          <div class="dev-compact-title">Player Vehicle</div>
+          <div class="dev-compact-table">
+            <div class="dev-compact-row">
+              <span>Lane</span>
+              <span id="dev-lane" class="dev-highlight-cyan">Lane 1</span>
+            </div>
+            <div class="dev-compact-row">
+              <span>Coords</span>
+              <span id="dev-pos">200, 500</span>
+            </div>
           </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Position (X, Y)</span>
-            <span class="dev-row-value" id="dev-pos">200, 500</span>
+          <div class="dev-lane-track" title="Active Lane Tracker">
+            <div class="dev-lane-cell" id="lane-box-0">L0</div>
+            <div class="dev-lane-cell active" id="lane-box-1">L1 (C)</div>
+            <div class="dev-lane-cell" id="lane-box-2">L2</div>
           </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Hitbox Size</span>
-            <span class="dev-row-value">50 × 80 px</span>
-          </div>
-        </div>
-        <!-- Visual 3-Lane Track -->
-        <div class="dev-lane-track" title="Active Lane Tracker">
-          <div class="dev-lane-cell" id="lane-box-0">Lane 0</div>
-          <div class="dev-lane-cell active" id="lane-box-1">Lane 1 (Player)</div>
-          <div class="dev-lane-cell" id="lane-box-2">Lane 2</div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Obstacles & Spawning Section -->
-      <section class="dev-section">
-        <div class="dev-section-title">Traffic & Spawning</div>
-        <div class="dev-table">
-          <div class="dev-table-row">
-            <span class="dev-row-label">Active Obstacles</span>
-            <span class="dev-row-value dev-highlight-cyan" id="dev-obs-active">0</span>
+        <!-- Compact Tools -->
+        <section class="dev-compact-card">
+          <div class="dev-compact-title">Tools</div>
+          <div class="dev-toggles">
+            <label class="dev-toggle-row">
+              <input type="checkbox" id="dev-toggle-hitboxes">
+              <span class="dev-toggle-slider"></span>
+              <span class="dev-toggle-label">Hitboxes</span>
+            </label>
+            <label class="dev-toggle-row">
+              <input type="checkbox" id="dev-toggle-godmode">
+              <span class="dev-toggle-slider"></span>
+              <span class="dev-toggle-label">God Mode</span>
+            </label>
           </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Obstacles Evaded</span>
-            <span class="dev-row-value" id="dev-obs-evaded">0</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Spawn Countdown</span>
-            <span class="dev-row-value" id="dev-spawn-timer">0 / 70f</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Spawn Interval</span>
-            <span class="dev-row-value" id="dev-spawn-interval">70 frames</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Last Spawn Lane</span>
-            <span class="dev-row-value" id="dev-last-lane">None</span>
-          </div>
-        </div>
-      </section>
+          <button id="dev-reset-highscore-btn" class="dev-sub-btn" type="button" style="margin-top: 3px;">Reset High</button>
+        </section>
+      </div>
 
-      <!-- JEV Autonomous Agent Section -->
-      <section class="dev-section">
-        <div class="dev-section-title">JEV Autopilot AI</div>
-        <div class="dev-table">
-          <div class="dev-table-row">
-            <span class="dev-row-label">Autopilot Mode</span>
-            <span class="dev-row-value" id="dev-jev-status">INACTIVE</span>
+      <!-- Right Column: Expanded JEV AI Command Center -->
+      <div class="dev-col-main" id="col-jev-main">
+        <!-- JEV Decision Hero Card -->
+        <section class="jev-hero-card">
+          <div class="jev-hero-header">
+            <div class="jev-hero-title">
+              <span class="jev-brain-icon">🧠</span>
+              <span>JEV AUTOPILOT AI</span>
+            </div>
+            <div class="jev-hero-badges">
+              <span class="dev-badge badge-idle" id="dev-jev-status">INACTIVE</span>
+              <span class="jev-latency-tag" id="dev-jev-latency">-- ms</span>
+            </div>
           </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Latest Action</span>
-            <span class="dev-row-value dev-highlight-purple" id="dev-jev-action">--</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Decision Confidence</span>
-            <span class="dev-row-value" id="dev-jev-confidence">--</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Decision Interval</span>
-            <span class="dev-row-value" id="dev-jev-interval">1000 ms (1s)</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">Inference Latency</span>
-            <span class="dev-row-value" id="dev-jev-latency">-- ms</span>
-          </div>
-          <div class="dev-table-row">
-            <span class="dev-row-label">AI Model</span>
-            <span class="dev-row-value" id="dev-jev-model">clef-flash</span>
-          </div>
-        </div>
-        <div class="dev-toggles" style="margin-top: 4px;">
-          <label class="dev-toggle-row">
-            <input type="checkbox" id="dev-toggle-jev">
-            <span class="dev-toggle-slider"></span>
-            <span class="dev-toggle-label">Enable JEV Autopilot</span>
-          </label>
-        </div>
-      </section>
 
-      <!-- Debug Controls Section -->
-      <section class="dev-section">
-        <div class="dev-section-title">Debug Controls</div>
-        <div class="dev-toggles">
-          <label class="dev-toggle-row">
-            <input type="checkbox" id="dev-toggle-hitboxes">
-            <span class="dev-toggle-slider"></span>
-            <span class="dev-toggle-label">Render Hitboxes & IDs</span>
-          </label>
-          <label class="dev-toggle-row">
-            <input type="checkbox" id="dev-toggle-godmode">
-            <span class="dev-toggle-slider"></span>
-            <span class="dev-toggle-label">God Mode (Invincible)</span>
-          </label>
-        </div>
-        <div class="dev-btn-row">
-          <button id="dev-reset-highscore-btn" class="dev-sub-btn" type="button">Reset High Score</button>
-        </div>
-      </section>
+          <div class="jev-decision-box">
+            <div class="jev-decision-label">CURRENT DECISION</div>
+            <div class="jev-decision-value" id="dev-jev-action-banner">--</div>
+            <div class="jev-decision-meta">
+              <span>Confidence: <strong id="dev-jev-confidence">--</strong></span>
+              <span>Model: <strong id="dev-jev-model">clef-flash</strong></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- JEV Probabilities Distribution Card -->
+        <section class="jev-prob-card">
+          <div class="jev-card-header">
+            <span>PROBABILITY DISTRIBUTION</span>
+            <span class="jev-sub-text">TypeSafe System One Choices</span>
+          </div>
+
+          <div class="jev-prob-rows">
+            <div class="jev-prob-row" id="prob-row-left">
+              <div class="prob-header">
+                <span class="prob-name">← STEER LEFT</span>
+                <span class="prob-val" id="prob-val-left">--%</span>
+              </div>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill" id="prob-bar-left" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="jev-prob-row" id="prob-row-stay">
+              <div class="prob-header">
+                <span class="prob-name">• MAINTAIN LANE</span>
+                <span class="prob-val" id="prob-val-stay">--%</span>
+              </div>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill" id="prob-bar-stay" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="jev-prob-row" id="prob-row-right">
+              <div class="prob-header">
+                <span class="prob-name">→ STEER RIGHT</span>
+                <span class="prob-val" id="prob-val-right">--%</span>
+              </div>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill" id="prob-bar-right" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- JEV Road Hazard Perception Map -->
+        <section class="jev-hazard-card">
+          <div class="jev-card-header">
+            <span>PERCEIVED ROAD HAZARDS</span>
+            <span class="jev-sub-text">Obstacle Distance Assessment</span>
+          </div>
+          <div class="jev-hazard-grid">
+            <div class="hazard-cell" id="hazard-lane-0">
+              <span class="hazard-lane-name">Lane 0 (Left)</span>
+              <span class="hazard-status" id="hazard-val-0">CLEAR</span>
+            </div>
+            <div class="hazard-cell" id="hazard-lane-1">
+              <span class="hazard-lane-name">Lane 1 (Center)</span>
+              <span class="hazard-status" id="hazard-val-1">CLEAR</span>
+            </div>
+            <div class="hazard-cell" id="hazard-lane-2">
+              <span class="hazard-lane-name">Lane 2 (Right)</span>
+              <span class="hazard-status" id="hazard-val-2">CLEAR</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- JEV Tuning & Controls -->
+        <section class="jev-controls-card">
+          <div class="jev-controls-row">
+            <div class="jev-stat-mini">
+              <span class="mini-label">QUERIES</span>
+              <span class="mini-val" id="jev-query-count">0</span>
+            </div>
+            <div class="jev-stat-mini">
+              <span class="mini-label">DODGES</span>
+              <span class="mini-val" id="dev-obs-evaded">0</span>
+            </div>
+            <div class="jev-interval-picker">
+              <span class="mini-label">INTERVAL</span>
+              <div class="interval-buttons">
+                <button type="button" class="interval-btn" data-ms="500">0.5s</button>
+                <button type="button" class="interval-btn active" data-ms="1000">1.0s</button>
+                <button type="button" class="interval-btn" data-ms="1500">1.5s</button>
+              </div>
+            </div>
+            <label class="dev-toggle-row jev-main-toggle">
+              <input type="checkbox" id="dev-toggle-jev">
+              <span class="dev-toggle-slider"></span>
+              <span class="dev-toggle-label">Autopilot</span>
+            </label>
+          </div>
+        </section>
+      </div>
     </div>
+  </aside>
   </aside>
 </div>
 

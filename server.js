@@ -96,7 +96,7 @@ function buildJevPrompt(gameState) {
     criteria.right = `Steer right into Lane 2 (Right lane, nearest obstacle at ${laneDistance[2] === Infinity ? 'clear' : Math.round(laneDistance[2]) + 'px'})`;
   }
 
-  return { stateSummary, criteria };
+  return { stateSummary, criteria, laneDistance };
 }
 
 /**
@@ -121,7 +121,7 @@ async function handleJevAction(req, res) {
       return;
     }
 
-    const { stateSummary, criteria } = buildJevPrompt(parsedState);
+    const { stateSummary, criteria, laneDistance } = buildJevPrompt(parsedState);
 
     const jevPayload = {
       model: JEV_MODEL,
@@ -178,7 +178,12 @@ async function handleJevAction(req, res) {
         probabilities,
         model: data.model || JEV_MODEL,
         latencyMs,
-        stateSummary
+        stateSummary,
+        laneDistance: {
+          0: laneDistance[0] === Infinity ? null : Math.round(laneDistance[0]),
+          1: laneDistance[1] === Infinity ? null : Math.round(laneDistance[1]),
+          2: laneDistance[2] === Infinity ? null : Math.round(laneDistance[2])
+        }
       }));
     } catch (err) {
       const latencyMs = Date.now() - startTime;

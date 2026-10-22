@@ -31,15 +31,20 @@
   const finalScoreEl = document.getElementById('final-score');
   const finalHighScoreEl = document.getElementById('final-high-score');
 
-  // Dev Stats DOM Elements
+  // Dev Stats Dashboard DOM Elements
   const devStatsBtn = document.getElementById('dev-stats-btn');
   const devPanel = document.getElementById('dev-panel');
+  const devPanelBody = document.getElementById('dev-panel-body');
   const devPanelCloseBtn = document.getElementById('dev-panel-close-btn');
   const devStatusBadge = document.getElementById('dev-status-badge');
+  const tabSplitView = document.getElementById('tab-split-view');
+  const tabJevView = document.getElementById('tab-jev-view');
+  const tabGameView = document.getElementById('tab-game-view');
+
+  // Game Engine & Performance DOM Elements
   const devFpsEl = document.getElementById('dev-fps');
   const devFrameTimeEl = document.getElementById('dev-frame-time');
   const devAvgFpsEl = document.getElementById('dev-avg-fps');
-  const devFpsMinMaxEl = document.getElementById('dev-fps-min-max');
   const devSpeedEl = document.getElementById('dev-speed');
   const devDurationEl = document.getElementById('dev-duration');
   const devFrameEl = document.getElementById('dev-frame');
@@ -52,11 +57,6 @@
     document.getElementById('lane-box-1'),
     document.getElementById('lane-box-2')
   ];
-  const devObsActiveEl = document.getElementById('dev-obs-active');
-  const devObsEvadedEl = document.getElementById('dev-obs-evaded');
-  const devSpawnTimerEl = document.getElementById('dev-spawn-timer');
-  const devSpawnIntervalEl = document.getElementById('dev-spawn-interval');
-  const devLastLaneEl = document.getElementById('dev-last-lane');
   const devToggleHitboxes = document.getElementById('dev-toggle-hitboxes');
   const devToggleGodmode = document.getElementById('dev-toggle-godmode');
   const devResetHighscoreBtn = document.getElementById('dev-reset-highscore-btn');
@@ -65,11 +65,38 @@
   const jevAiBtn = document.getElementById('jev-ai-btn');
   const devToggleJev = document.getElementById('dev-toggle-jev');
   const devJevStatusEl = document.getElementById('dev-jev-status');
-  const devJevActionEl = document.getElementById('dev-jev-action');
+  const devJevActionBanner = document.getElementById('dev-jev-action-banner');
   const devJevConfidenceEl = document.getElementById('dev-jev-confidence');
-  const devJevIntervalEl = document.getElementById('dev-jev-interval');
   const devJevLatencyEl = document.getElementById('dev-jev-latency');
   const devJevModelEl = document.getElementById('dev-jev-model');
+
+  // Probabilities DOM Elements
+  const probValLeft = document.getElementById('prob-val-left');
+  const probValStay = document.getElementById('prob-val-stay');
+  const probValRight = document.getElementById('prob-val-right');
+  const probBarLeft = document.getElementById('prob-bar-left');
+  const probBarStay = document.getElementById('prob-bar-stay');
+  const probBarRight = document.getElementById('prob-bar-right');
+  const probRowLeft = document.getElementById('prob-row-left');
+  const probRowStay = document.getElementById('prob-row-stay');
+  const probRowRight = document.getElementById('prob-row-right');
+
+  // Hazard Perception DOM Elements
+  const hazardCells = [
+    document.getElementById('hazard-lane-0'),
+    document.getElementById('hazard-lane-1'),
+    document.getElementById('hazard-lane-2')
+  ];
+  const hazardVals = [
+    document.getElementById('hazard-val-0'),
+    document.getElementById('hazard-val-1'),
+    document.getElementById('hazard-val-2')
+  ];
+
+  // JEV Tuning & Metrics DOM Elements
+  const jevQueryCountEl = document.getElementById('jev-query-count');
+  const devObsEvadedEl = document.getElementById('dev-obs-evaded');
+  const intervalButtons = document.querySelectorAll('.interval-btn');
 
   function laneCenterX(laneIndex) {
     return ROAD_MARGIN + LANE_WIDTH * laneIndex + LANE_WIDTH / 2;
@@ -119,13 +146,16 @@
 
   // JEV AI Autopilot State
   let jevAutopilotActive = false;
-  const jevQueryIntervalMs = 1000; // query every 1 second
+  let jevQueryIntervalMs = 1000; // default 1 second
   let jevTimer = null;
   let jevIsRequestInProgress = false;
   let jevLastAction = '--';
   let jevLastConfidence = null;
   let jevLastLatency = null;
   let jevModelName = 'clef-flash';
+  let jevQueryCount = 0;
+  let jevCurrentProbabilities = { left: 0, stay: 0, right: 0 };
+  let jevCurrentHazards = { 0: null, 1: null, 2: null };
 
   // Fetch initial config from server
   fetch('/api/jev/config')
@@ -156,7 +186,7 @@
     if (!devStatsVisible) return;
     if (!now) now = performance.now();
 
-    // 1. Performance Section
+    // 1. Performance & Game State Badge
     if (devFpsEl) {
       if (state.running && !state.paused) {
         devFpsEl.textContent = currentFps;
@@ -164,13 +194,8 @@
         if (devFrameTimeEl) devFrameTimeEl.textContent = currentFrameTime.toFixed(1) + ' ms/f';
         const avg = fpsHistory.length ? Math.round(fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length) : currentFps;
         if (devAvgFpsEl) devAvgFpsEl.textContent = avg + ' avg';
-        if (devFpsMinMaxEl) {
-          const minText = minFps === Infinity ? '--' : minFps;
-          const maxText = maxFps === 0 ? '--' : maxFps;
-          devFpsMinMaxEl.textContent = `Min: ${minText} | Max: ${maxText}`;
-        }
       } else if (state.paused) {
-        devFpsEl.textContent = 'PAUSED';
+        devFpsEl.textContent = 'PAUSE';
         devFpsEl.className = 'dev-fps-value warn';
         if (devFrameTimeEl) devFrameTimeEl.textContent = '0.0 ms/f';
       } else {
@@ -178,11 +203,9 @@
         devFpsEl.className = 'dev-fps-value';
         if (devFrameTimeEl) devFrameTimeEl.textContent = '-- ms/f';
         if (devAvgFpsEl) devAvgFpsEl.textContent = '-- avg';
-        if (devFpsMinMaxEl) devFpsMinMaxEl.textContent = 'Min: -- | Max: --';
       }
     }
 
-    // 2. Status Badge
     if (devStatusBadge) {
       if (state.running && !state.paused) {
         devStatusBadge.textContent = 'RUNNING';
@@ -199,50 +222,52 @@
       }
     }
 
-    // 3. Game Stats Section
+    // 2. Game Engine Section
     if (devSpeedEl) devSpeedEl.textContent = state.speed.toFixed(2) + ' px/f';
     if (devDurationEl) devDurationEl.textContent = formatTime(getRunDurationMs());
     if (devFrameEl) devFrameEl.textContent = state.frame;
     if (devScoreEl) devScoreEl.textContent = state.score;
     if (devHighscoreEl) devHighscoreEl.textContent = highScore;
 
-    // 4. Player Vehicle Section
-    const laneLabels = ['Lane 0 (Left)', 'Lane 1 (Center)', 'Lane 2 (Right)'];
-    if (devLaneEl) devLaneEl.textContent = laneLabels[state.playerLane] || `Lane ${state.playerLane}`;
+    // 3. Player Vehicle Section
+    if (devLaneEl) devLaneEl.textContent = `Lane ${state.playerLane}`;
     if (devPosEl) devPosEl.textContent = `${Math.round(laneCenterX(state.playerLane))}, ${PLAYER_Y}`;
 
     laneCells.forEach((cell, idx) => {
       if (cell) cell.classList.toggle('active', idx === state.playerLane);
     });
 
-    // 5. Traffic & Spawning Section
-    if (devObsActiveEl) devObsActiveEl.textContent = state.obstacles.length;
-    if (devObsEvadedEl) devObsEvadedEl.textContent = obstaclesEvaded;
-    const remainingSpawn = Math.max(0, state.spawnInterval - state.spawnTimer);
-    if (devSpawnTimerEl) devSpawnTimerEl.textContent = `${remainingSpawn} / ${state.spawnInterval}f`;
-    if (devSpawnIntervalEl) devSpawnIntervalEl.textContent = `${state.spawnInterval} frames`;
-    if (devLastLaneEl) devLastLaneEl.textContent = state.lastLaneSpawned >= 0 ? `Lane ${state.lastLaneSpawned}` : 'None';
-
-    // 6. JEV Autopilot AI Section
+    // 4. JEV Autopilot AI Hero & Telemetry
     if (devJevStatusEl) {
       if (jevAutopilotActive) {
         devJevStatusEl.textContent = jevIsRequestInProgress ? 'THINKING...' : 'ACTIVE';
-        devJevStatusEl.className = 'dev-row-value dev-highlight-purple';
+        devJevStatusEl.className = 'dev-badge badge-running';
       } else {
         devJevStatusEl.textContent = 'INACTIVE';
-        devJevStatusEl.className = 'dev-row-value';
+        devJevStatusEl.className = 'dev-badge badge-idle';
       }
     }
-    if (devJevActionEl) {
-      devJevActionEl.textContent = jevLastAction.toUpperCase();
+
+    if (devJevActionBanner) {
+      if (jevLastAction === 'left') {
+        devJevActionBanner.textContent = '← STEER LEFT';
+        devJevActionBanner.className = 'jev-decision-value action-left';
+      } else if (jevLastAction === 'right') {
+        devJevActionBanner.textContent = 'STEER RIGHT →';
+        devJevActionBanner.className = 'jev-decision-value action-right';
+      } else if (jevLastAction === 'stay') {
+        devJevActionBanner.textContent = '• MAINTAIN LANE';
+        devJevActionBanner.className = 'jev-decision-value action-stay';
+      } else {
+        devJevActionBanner.textContent = '--';
+        devJevActionBanner.className = 'jev-decision-value';
+      }
     }
+
     if (devJevConfidenceEl) {
       devJevConfidenceEl.textContent = typeof jevLastConfidence === 'number'
         ? Math.round(jevLastConfidence * 100) + '%'
         : '--';
-    }
-    if (devJevIntervalEl) {
-      devJevIntervalEl.textContent = `${jevQueryIntervalMs} ms (1s)`;
     }
     if (devJevLatencyEl) {
       devJevLatencyEl.textContent = jevLastLatency != null ? `${jevLastLatency} ms` : '-- ms';
@@ -250,6 +275,58 @@
     if (devJevModelEl) {
       devJevModelEl.textContent = jevModelName;
     }
+
+    // 5. JEV Probabilities Breakdown
+    const pLeft = Math.round((jevCurrentProbabilities.left || 0) * 100);
+    const pStay = Math.round((jevCurrentProbabilities.stay || 0) * 100);
+    const pRight = Math.round((jevCurrentProbabilities.right || 0) * 100);
+
+    if (probValLeft) probValLeft.textContent = pLeft + '%';
+    if (probBarLeft) probBarLeft.style.width = pLeft + '%';
+    if (probRowLeft) probRowLeft.classList.toggle('active-choice', jevLastAction === 'left');
+
+    if (probValStay) probValStay.textContent = pStay + '%';
+    if (probBarStay) probBarStay.style.width = pStay + '%';
+    if (probRowStay) probRowStay.classList.toggle('active-choice', jevLastAction === 'stay');
+
+    if (probValRight) probValRight.textContent = pRight + '%';
+    if (probBarRight) probBarRight.style.width = pRight + '%';
+    if (probRowRight) probRowRight.classList.toggle('active-choice', jevLastAction === 'right');
+
+    // 6. Road Hazard Perception Map
+    [0, 1, 2].forEach(lane => {
+      const cell = hazardCells[lane];
+      const valEl = hazardVals[lane];
+      const dist = jevCurrentHazards[lane];
+
+      if (cell && valEl) {
+        cell.classList.remove('hazard-clear', 'hazard-approaching', 'hazard-critical');
+        if (dist == null) {
+          valEl.textContent = 'CLEAR';
+          cell.classList.add('hazard-clear');
+        } else if (dist < 180) {
+          valEl.textContent = `DANGER (${dist}px)`;
+          cell.classList.add('hazard-critical');
+        } else {
+          valEl.textContent = `AHEAD (${dist}px)`;
+          cell.classList.add('hazard-approaching');
+        }
+      }
+    });
+
+    // 7. JEV Counters
+    if (jevQueryCountEl) jevQueryCountEl.textContent = jevQueryCount;
+    if (devObsEvadedEl) devObsEvadedEl.textContent = obstaclesEvaded;
+  }
+
+  function setDashboardView(viewMode) {
+    if (!devPanelBody) return;
+    devPanelBody.classList.remove('view-split', 'view-jev', 'view-game');
+    devPanelBody.classList.add('view-' + viewMode);
+
+    if (tabSplitView) tabSplitView.classList.toggle('active', viewMode === 'split');
+    if (tabJevView) tabJevView.classList.toggle('active', viewMode === 'jev');
+    if (tabGameView) tabGameView.classList.toggle('active', viewMode === 'game');
   }
 
   function setDevStatsVisible(show) {
@@ -260,6 +337,10 @@
     }
     if (devPanel) {
       devPanel.classList.toggle('hidden', !show);
+    }
+    const gameWrapper = document.getElementById('game-wrapper');
+    if (gameWrapper) {
+      gameWrapper.classList.toggle('dev-open', show);
     }
 
     if (show) {
@@ -287,7 +368,10 @@
     if (!state.running || state.paused) return;
 
     jevIsRequestInProgress = true;
-    if (devJevStatusEl) devJevStatusEl.textContent = 'THINKING...';
+    if (devJevStatusEl) {
+      devJevStatusEl.textContent = 'THINKING...';
+      devJevStatusEl.className = 'dev-badge badge-paused';
+    }
 
     // Gather oncoming obstacles ahead of car
     const obstaclesAhead = state.obstacles
@@ -314,10 +398,13 @@
 
       if (res.ok) {
         const data = await res.json();
+        jevQueryCount++;
         jevLastAction = data.action || 'stay';
         jevLastConfidence = data.confidence;
         jevLastLatency = data.latencyMs;
         if (data.model) jevModelName = data.model;
+        if (data.probabilities) jevCurrentProbabilities = data.probabilities;
+        if (data.laneDistance) jevCurrentHazards = data.laneDistance;
 
         // Apply chosen control action to the vehicle
         if (state.running && !state.paused && jevAutopilotActive) {
@@ -690,6 +777,26 @@
       devToggleJev.blur();
     });
   }
+
+  // Dashboard View Tab Switchers
+  if (tabSplitView) tabSplitView.addEventListener('click', () => setDashboardView('split'));
+  if (tabJevView) tabJevView.addEventListener('click', () => setDashboardView('jev'));
+  if (tabGameView) tabGameView.addEventListener('click', () => setDashboardView('game'));
+
+  // Interval Picker Buttons
+  intervalButtons.forEach(btn => {
+    btn.addEventListener('click', function () {
+      const ms = parseInt(this.dataset.ms, 10);
+      if (ms) {
+        jevQueryIntervalMs = ms;
+        intervalButtons.forEach(b => b.classList.toggle('active', b === this));
+        if (jevAutopilotActive) {
+          stopJevLoop();
+          startJevLoop();
+        }
+      }
+    });
+  });
 
   // Dev Stats Control Listeners
   if (devStatsBtn) {
