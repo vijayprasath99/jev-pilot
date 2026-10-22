@@ -19,6 +19,8 @@
   const OBSTACLE_HEIGHT = 80;
 
   const HIGH_SCORE_KEY = 'infiniteDriver.highScore';
+  const JEV_INTERVAL_KEY = 'infiniteDriver.jevIntervalMs';
+  const JEV_MODE_KEY = 'infiniteDriver.jevMode';
 
   const startScreen = document.getElementById('start-screen');
   const pauseScreen = document.getElementById('pause-screen');
@@ -107,6 +109,8 @@
   // JEV Tuning & Metrics DOM Elements
   const jevQueryCountEl = document.getElementById('jev-query-count');
   const devObsEvadedEl = document.getElementById('dev-obs-evaded');
+  const jevIntervalValEl = document.getElementById('jev-interval-val');
+  const jevIntervalSlider = document.getElementById('jev-interval-slider');
   const intervalButtons = document.querySelectorAll('.interval-btn');
 
   function laneCenterX(laneIndex) {
@@ -156,9 +160,37 @@
   let devIdleInterval = null;
 
   // Unified JEV Mode State (Autopilot + Telemetry Dashboard)
-  let jevModeActive = false;
-  let jevAutopilotActive = false;
-  let jevQueryIntervalMs = 1000; // default 1 second
+  // Interval range: 0.1s (100ms) to 1.0s (1000ms), default 0.5s (500ms)
+  let jevQueryIntervalMs = 500;
+  try {
+    const savedInterval = localStorage.getItem(JEV_INTERVAL_KEY);
+    if (savedInterval !== null) {
+      const parsed = parseInt(savedInterval, 10);
+      if (!isNaN(parsed) && parsed >= 100 && parsed <= 1000) {
+        jevQueryIntervalMs = parsed;
+      }
+    }
+  } catch (e) {
+    jevQueryIntervalMs = 500;
+  }
+
+  // JEV Move / Mode turned ON by default, remembered in browser
+  let jevModeActive = true;
+  let jevAutopilotActive = true;
+  try {
+    const savedMode = localStorage.getItem(JEV_MODE_KEY);
+    if (savedMode !== null) {
+      jevModeActive = savedMode === 'true';
+      jevAutopilotActive = jevModeActive;
+    } else {
+      jevModeActive = true;
+      jevAutopilotActive = true;
+    }
+  } catch (e) {
+    jevModeActive = true;
+    jevAutopilotActive = true;
+  }
+
   let jevTimer = null;
   let jevIsRequestInProgress = false;
   let jevLastAction = '--';
@@ -570,10 +602,16 @@
   }
 
   // Unified JEV Mode: Activates Autopilot AND opens the telemetry dashboard side-by-side
-  function setJevMode(enabled) {
+  function setJevMode(enabled, persist = true) {
     jevModeActive = enabled;
     jevAutopilotActive = enabled;
     devStatsVisible = enabled;
+
+    if (persist) {
+      try {
+        localStorage.setItem(JEV_MODE_KEY, String(enabled));
+      } catch (e) {}
+    }
 
     if (jevModeBtn) {
       jevModeBtn.classList.toggle('active', enabled);
@@ -608,6 +646,37 @@
         clearInterval(devIdleInterval);
         devIdleInterval = null;
       }
+    }
+  }
+
+  // Interval Tuning (0.1s to 1.0s, default 0.5s) with browser persistence
+  function setIntervalMs(ms, updateSlider = true) {
+    ms = Math.max(100, Math.min(1000, Math.round(ms)));
+    jevQueryIntervalMs = ms;
+    try {
+      localStorage.setItem(JEV_INTERVAL_KEY, String(ms));
+    } catch (e) {}
+
+    const displaySec = (ms / 1000).toFixed(ms % 100 === 0 ? 1 : 2) + 's';
+    if (jevIntervalValEl) {
+      jevIntervalValEl.textContent = displaySec;
+    }
+    if (updateSlider && jevIntervalSlider) {
+      jevIntervalSlider.value = (ms / 1000).toFixed(2);
+    }
+
+    intervalButtons.forEach(btn => {
+      const btnMs = parseInt(btn.dataset.ms, 10);
+      btn.classList.toggle('active', btnMs === ms);
+    });
+
+    if (jevModeActive && jevTimer) {
+      clearInterval(jevTimer);
+      jevTimer = setInterval(() => {
+        if (state.running && !state.paused && jevAutopilotActive) {
+          queryJevAi();
+        }
+      }, jevQueryIntervalMs);
     }
   }
 
@@ -995,7 +1064,13 @@
       lastFrameTime = performance.now();
       if (pauseScreen) pauseScreen.classList.add('hidden');
       if (devStatsVisible) updateDevPanel(performance.now());
-      if (jevModeActive) startJevLoop();
+      if (jevModeActive && jevAutopilotActive) {
+        if (!jevTimer) {
+          startJevLoop();
+        } else {
+          queryJevAi();
+        }
+      }
       requestAnimationFrame(gameLoop);
     }
   }
@@ -1008,7 +1083,13 @@
     render();
     lastFrameTime = performance.now();
     if (devStatsVisible) updateDevPanel(performance.now());
-    if (jevModeActive) startJevLoop();
+    if (jevModeActive && jevAutopilotActive) {
+      if (!jevTimer) {
+        startJevLoop();
+      } else {
+        queryJevAi();
+      }
+    }
     requestAnimationFrame(gameLoop);
   }
 
@@ -1041,17 +1122,21 @@
   if (tabJevView) tabJevView.addEventListener('click', () => setDashboardView('jev'));
   if (tabGameView) tabGameView.addEventListener('click', () => setDashboardView('game'));
 
-  // Interval Picker Buttons
+  // Interval Slider & Button Listeners
+  if (jevIntervalSlider) {
+    jevIntervalSlider.addEventListener('input', function () {
+      const valSec = parseFloat(this.value);
+      const ms = Math.round(valSec * 1000);
+      setIntervalMs(ms, false);
+    });
+  }
+
   intervalButtons.forEach(btn => {
     btn.addEventListener('click', function () {
       const ms = parseInt(this.dataset.ms, 10);
       if (ms) {
-        jevQueryIntervalMs = ms;
-        intervalButtons.forEach(b => b.classList.toggle('active', b === this));
-        if (jevModeActive) {
-          stopJevLoop();
-          startJevLoop();
-        }
+        setIntervalMs(ms, true);
+        this.blur();
       }
     });
   });
@@ -1137,14 +1222,22 @@
   render();
   updateDevPanel(performance.now());
 
-  // Auto-activate JEV if specified in URL query params
+  // Initialize Interval UI (restored from browser or default 0.5s)
+  setIntervalMs(jevQueryIntervalMs, true);
+
+  // Initialize JEV Move / Mode (turned ON by default, or restored from browser)
+  setJevMode(jevModeActive, false);
+
+  // Auto-activate or toggle JEV if specified in URL query params
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('start') === 'true') {
       startGame();
     }
     if (params.get('autojev') === 'true' || params.get('jev') === 'true') {
-      setJevMode(true);
+      setJevMode(true, true);
+    } else if (params.get('autojev') === 'false' || params.get('jev') === 'false') {
+      setJevMode(false, true);
     }
   } catch (e) {}
 })();

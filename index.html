@@ -8,14 +8,14 @@
 </head>
 <body>
 
-<div id="game-wrapper">
+<div id="game-wrapper" class="dev-open">
   <div id="game-container">
     <div id="hud">
       <div>Score: <span id="score">0</span></div>
       <div>High: <span id="high-score">0</span></div>
     </div>
 
-    <button id="jev-mode-btn" class="hud-jev-toggle" type="button" aria-pressed="false" title="Toggle JEV Mode & Telemetry (Hotkey: J or `)">
+    <button id="jev-mode-btn" class="hud-jev-toggle active" type="button" aria-pressed="true" title="Toggle JEV Mode & Telemetry (Hotkey: J or `)">
       <span class="hud-ai-dot"></span>
       <span>🤖 JEV</span>
     </button>
@@ -46,7 +46,7 @@
   </div>
 
   <!-- Developer & JEV Stats Dashboard -->
-  <aside id="dev-panel" class="dev-panel hidden" aria-label="Developer & JEV Stats">
+  <aside id="dev-panel" class="dev-panel" aria-label="Developer & JEV Stats">
     <div class="dev-panel-header">
       <div class="dev-title-wrap">
         <span class="dev-indicator-dot" id="dev-indicator-dot"></span>
@@ -272,15 +272,23 @@
               <span class="mini-val" id="dev-obs-evaded">0</span>
             </div>
             <div class="jev-interval-picker">
-              <span class="mini-label">INTERVAL</span>
+              <div class="interval-top-row">
+                <span class="mini-label">INTERVAL</span>
+                <span class="interval-val-badge" id="jev-interval-val">0.5s</span>
+              </div>
+              <div class="interval-slider-row">
+                <input type="range" id="jev-interval-slider" class="interval-range" min="0.1" max="1.0" step="0.05" value="0.5" aria-label="JEV Query Interval in seconds">
+              </div>
               <div class="interval-buttons">
-                <button type="button" class="interval-btn" data-ms="500">0.5s</button>
-                <button type="button" class="interval-btn active" data-ms="1000">1.0s</button>
-                <button type="button" class="interval-btn" data-ms="1500">1.5s</button>
+                <button type="button" class="interval-btn" data-ms="100" title="100ms ultra-fast">0.1s</button>
+                <button type="button" class="interval-btn" data-ms="250" title="250ms fast">0.25s</button>
+                <button type="button" class="interval-btn active" data-ms="500" title="500ms balanced (default)">0.5s</button>
+                <button type="button" class="interval-btn" data-ms="750" title="750ms moderate">0.75s</button>
+                <button type="button" class="interval-btn" data-ms="1000" title="1000ms slow">1.0s</button>
               </div>
             </div>
             <label class="dev-toggle-row jev-main-toggle">
-              <input type="checkbox" id="dev-toggle-jev">
+              <input type="checkbox" id="dev-toggle-jev" checked>
               <span class="dev-toggle-slider"></span>
               <span class="dev-toggle-label">Autopilot</span>
             </label>
@@ -288,7 +296,6 @@
         </section>
       </div>
     </div>
-  </aside>
   </aside>
 </div>
 
