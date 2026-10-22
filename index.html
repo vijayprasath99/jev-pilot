@@ -15,10 +15,16 @@
       <div>High: <span id="high-score">0</span></div>
     </div>
 
-    <button id="dev-stats-btn" class="hud-dev-btn" type="button" aria-expanded="false" title="Toggle Dev Stats (Hotkey: ` or F2)">
-      <span class="hud-dev-dot"></span>
-      <span>DEV</span>
-    </button>
+    <div class="top-controls">
+      <button id="jev-ai-btn" class="hud-action-btn jev-btn" type="button" aria-pressed="false" title="Toggle JEV AI Autopilot (Hotkey: J)">
+        <span class="hud-ai-dot"></span>
+        <span>🤖 JEV AI</span>
+      </button>
+      <button id="dev-stats-btn" class="hud-action-btn dev-btn" type="button" aria-expanded="false" title="Toggle Dev Stats (Hotkey: ` or F2)">
+        <span class="hud-dev-dot"></span>
+        <span>DEV</span>
+      </button>
+    </div>
 
     <canvas id="game-canvas" width="400" height="600"></canvas>
 
@@ -152,6 +158,44 @@
             <span class="dev-row-label">Last Spawn Lane</span>
             <span class="dev-row-value" id="dev-last-lane">None</span>
           </div>
+        </div>
+      </section>
+
+      <!-- JEV Autonomous Agent Section -->
+      <section class="dev-section">
+        <div class="dev-section-title">JEV Autopilot AI</div>
+        <div class="dev-table">
+          <div class="dev-table-row">
+            <span class="dev-row-label">Autopilot Mode</span>
+            <span class="dev-row-value" id="dev-jev-status">INACTIVE</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Latest Action</span>
+            <span class="dev-row-value dev-highlight-purple" id="dev-jev-action">--</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Decision Confidence</span>
+            <span class="dev-row-value" id="dev-jev-confidence">--</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Decision Interval</span>
+            <span class="dev-row-value" id="dev-jev-interval">1000 ms (1s)</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">Inference Latency</span>
+            <span class="dev-row-value" id="dev-jev-latency">-- ms</span>
+          </div>
+          <div class="dev-table-row">
+            <span class="dev-row-label">AI Model</span>
+            <span class="dev-row-value" id="dev-jev-model">clef-flash</span>
+          </div>
+        </div>
+        <div class="dev-toggles" style="margin-top: 4px;">
+          <label class="dev-toggle-row">
+            <input type="checkbox" id="dev-toggle-jev">
+            <span class="dev-toggle-slider"></span>
+            <span class="dev-toggle-label">Enable JEV Autopilot</span>
+          </label>
         </div>
       </section>
 

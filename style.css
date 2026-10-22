@@ -56,7 +56,7 @@ body {
   position: absolute;
   top: 14px;
   left: 14px;
-  right: 88px;
+  right: 160px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -68,10 +68,10 @@ body {
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 6px 14px;
+  padding: 5px 11px;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -82,7 +82,7 @@ body {
 #hud span {
   color: #38bdf8;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
   margin-left: 4px;
 }
 
@@ -90,27 +90,33 @@ body {
   color: #fbbf24;
 }
 
-/* Dev Stats Button in Top-Right of Game */
-#dev-stats-btn {
+/* Top-Right Action Controls (JEV AI + Dev Stats) */
+.top-controls {
   position: absolute;
   top: 14px;
-  right: 14px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   z-index: 25;
+}
+
+.hud-action-btn {
   margin-top: 0;
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-family: 'Chakra Petch', sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
   color: #94a3b8;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
   pointer-events: auto;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -118,26 +124,86 @@ body {
   user-select: none;
 }
 
-#dev-stats-btn:hover {
+.hud-action-btn:hover {
   color: #f8fafc;
-  border-color: rgba(56, 189, 248, 0.8);
-  background: rgba(30, 41, 59, 0.95);
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
   transform: translateY(-1px);
 }
 
-#dev-stats-btn:active {
+.hud-action-btn:active {
   transform: translateY(1px);
 }
 
-#dev-stats-btn.active {
+/* DEV Stats Button */
+.hud-action-btn.dev-btn {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.hud-action-btn.dev-btn:hover {
+  border-color: rgba(56, 189, 248, 0.8);
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+}
+
+.hud-action-btn.dev-btn.active {
   background: rgba(14, 165, 233, 0.22);
   border-color: #38bdf8;
   color: #38bdf8;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
 }
 
 .hud-dev-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: all 0.2s ease;
+}
+
+.hud-action-btn.dev-btn.active .hud-dev-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: devPulse 1.6s infinite;
+}
+
+/* JEV AI Autopilot Button */
+.hud-action-btn.jev-btn {
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #d8b4fe;
+}
+
+.hud-action-btn.jev-btn:hover {
+  border-color: rgba(168, 85, 247, 0.8);
+  background: rgba(46, 16, 101, 0.65);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
+  color: #f3e8ff;
+}
+
+.hud-action-btn.jev-btn.active {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: #c084fc;
+  color: #f3e8ff;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+}
+
+.hud-ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7e22ce;
+  transition: all 0.2s ease;
+}
+
+.hud-action-btn.jev-btn.active .hud-ai-dot {
+  background: #c084fc;
+  box-shadow: 0 0 8px #c084fc;
+  animation: aiPulse 1.2s infinite;
+}
+
+@keyframes aiPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -649,6 +715,12 @@ button {
 .dev-highlight-amber {
   color: #fbbf24;
   font-weight: 700;
+}
+
+.dev-highlight-purple {
+  color: #c084fc;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
 }
 
 /* 3-Lane Track Visualizer */

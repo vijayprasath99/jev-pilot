@@ -61,6 +61,16 @@
   const devToggleGodmode = document.getElementById('dev-toggle-godmode');
   const devResetHighscoreBtn = document.getElementById('dev-reset-highscore-btn');
 
+  // JEV Autopilot AI DOM Elements
+  const jevAiBtn = document.getElementById('jev-ai-btn');
+  const devToggleJev = document.getElementById('dev-toggle-jev');
+  const devJevStatusEl = document.getElementById('dev-jev-status');
+  const devJevActionEl = document.getElementById('dev-jev-action');
+  const devJevConfidenceEl = document.getElementById('dev-jev-confidence');
+  const devJevIntervalEl = document.getElementById('dev-jev-interval');
+  const devJevLatencyEl = document.getElementById('dev-jev-latency');
+  const devJevModelEl = document.getElementById('dev-jev-model');
+
   function laneCenterX(laneIndex) {
     return ROAD_MARGIN + LANE_WIDTH * laneIndex + LANE_WIDTH / 2;
   }
@@ -106,6 +116,27 @@
   let obstaclesEvaded = 0;
   let lastDevDomUpdate = 0;
   let devIdleInterval = null;
+
+  // JEV AI Autopilot State
+  let jevAutopilotActive = false;
+  const jevQueryIntervalMs = 1000; // query every 1 second
+  let jevTimer = null;
+  let jevIsRequestInProgress = false;
+  let jevLastAction = '--';
+  let jevLastConfidence = null;
+  let jevLastLatency = null;
+  let jevModelName = 'clef-flash';
+
+  // Fetch initial config from server
+  fetch('/api/jev/config')
+    .then(res => res.json())
+    .then(cfg => {
+      if (cfg && cfg.model) {
+        jevModelName = cfg.model;
+        if (devJevModelEl) devJevModelEl.textContent = jevModelName;
+      }
+    })
+    .catch(() => {});
 
   function getRunDurationMs() {
     if (!runStartTime) return 0;
@@ -191,6 +222,34 @@
     if (devSpawnTimerEl) devSpawnTimerEl.textContent = `${remainingSpawn} / ${state.spawnInterval}f`;
     if (devSpawnIntervalEl) devSpawnIntervalEl.textContent = `${state.spawnInterval} frames`;
     if (devLastLaneEl) devLastLaneEl.textContent = state.lastLaneSpawned >= 0 ? `Lane ${state.lastLaneSpawned}` : 'None';
+
+    // 6. JEV Autopilot AI Section
+    if (devJevStatusEl) {
+      if (jevAutopilotActive) {
+        devJevStatusEl.textContent = jevIsRequestInProgress ? 'THINKING...' : 'ACTIVE';
+        devJevStatusEl.className = 'dev-row-value dev-highlight-purple';
+      } else {
+        devJevStatusEl.textContent = 'INACTIVE';
+        devJevStatusEl.className = 'dev-row-value';
+      }
+    }
+    if (devJevActionEl) {
+      devJevActionEl.textContent = jevLastAction.toUpperCase();
+    }
+    if (devJevConfidenceEl) {
+      devJevConfidenceEl.textContent = typeof jevLastConfidence === 'number'
+        ? Math.round(jevLastConfidence * 100) + '%'
+        : '--';
+    }
+    if (devJevIntervalEl) {
+      devJevIntervalEl.textContent = `${jevQueryIntervalMs} ms (1s)`;
+    }
+    if (devJevLatencyEl) {
+      devJevLatencyEl.textContent = jevLastLatency != null ? `${jevLastLatency} ms` : '-- ms';
+    }
+    if (devJevModelEl) {
+      devJevModelEl.textContent = jevModelName;
+    }
   }
 
   function setDevStatsVisible(show) {
@@ -220,6 +279,98 @@
         devIdleInterval = null;
       }
     }
+  }
+
+  // JEV Autopilot Loop and Querying
+  async function queryJevAi() {
+    if (jevIsRequestInProgress) return;
+    if (!state.running || state.paused) return;
+
+    jevIsRequestInProgress = true;
+    if (devJevStatusEl) devJevStatusEl.textContent = 'THINKING...';
+
+    // Gather oncoming obstacles ahead of car
+    const obstaclesAhead = state.obstacles
+      .filter(obs => obs.y < PLAYER_Y + PLAYER_HEIGHT)
+      .map(obs => ({
+        lane: obs.lane,
+        y: Math.round(obs.y),
+        distance: Math.round(PLAYER_Y - obs.y)
+      }));
+
+    const payload = {
+      playerLane: state.playerLane,
+      speed: state.speed,
+      score: state.score,
+      obstacles: obstaclesAhead
+    };
+
+    try {
+      const res = await fetch('/api/jev/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        jevLastAction = data.action || 'stay';
+        jevLastConfidence = data.confidence;
+        jevLastLatency = data.latencyMs;
+        if (data.model) jevModelName = data.model;
+
+        // Apply chosen control action to the vehicle
+        if (state.running && !state.paused && jevAutopilotActive) {
+          if (data.action === 'left') {
+            movePlayer(-1);
+          } else if (data.action === 'right') {
+            movePlayer(1);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('JEV AI query error:', err);
+    } finally {
+      jevIsRequestInProgress = false;
+      updateDevPanel(performance.now());
+    }
+  }
+
+  function startJevLoop() {
+    if (jevTimer) return;
+    if (state.running && !state.paused) {
+      queryJevAi();
+    }
+    jevTimer = setInterval(() => {
+      if (state.running && !state.paused && jevAutopilotActive) {
+        queryJevAi();
+      }
+    }, jevQueryIntervalMs);
+  }
+
+  function stopJevLoop() {
+    if (jevTimer) {
+      clearInterval(jevTimer);
+      jevTimer = null;
+    }
+  }
+
+  function setJevAutopilot(enabled) {
+    jevAutopilotActive = enabled;
+    if (jevAiBtn) {
+      jevAiBtn.classList.toggle('active', enabled);
+      jevAiBtn.setAttribute('aria-pressed', String(enabled));
+    }
+    if (devToggleJev) {
+      devToggleJev.checked = enabled;
+    }
+
+    if (enabled) {
+      startJevLoop();
+    } else {
+      stopJevLoop();
+    }
+    updateDevPanel(performance.now());
   }
 
   function resetState() {
@@ -290,6 +441,8 @@
   function endGame() {
     state.running = false;
     state.paused = false;
+    stopJevLoop();
+
     if (pauseScreen) pauseScreen.classList.add('hidden');
 
     if (state.score > highScore) {
@@ -350,13 +503,26 @@
     const x = laneCenterX(state.playerLane) - PLAYER_WIDTH / 2;
     drawCarShape(x, PLAYER_Y, PLAYER_WIDTH, PLAYER_HEIGHT, '#3a86ff', '#cfe8ff');
 
+    // JEV AI Autopilot visual aura (subtle futuristic purple outline)
+    if (jevAutopilotActive) {
+      ctx.save();
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(x - 3, PLAYER_Y - 3, PLAYER_WIDTH + 6, PLAYER_HEIGHT + 6);
+      ctx.fillStyle = '#c084fc';
+      ctx.font = '9px "Chakra Petch", monospace';
+      ctx.fillText('🤖 JEV', x + PLAYER_WIDTH - 24, PLAYER_Y - 5);
+      ctx.restore();
+    }
+
     // God Mode visual shield aura
     if (devSettings.godMode) {
       ctx.save();
       ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = 3;
       ctx.setLineDash([6, 4]);
-      ctx.strokeRect(x - 4, PLAYER_Y - 4, PLAYER_WIDTH + 8, PLAYER_HEIGHT + 8);
+      ctx.strokeRect(x - 6, PLAYER_Y - 6, PLAYER_WIDTH + 12, PLAYER_HEIGHT + 12);
       ctx.restore();
     }
 
@@ -368,7 +534,7 @@
       ctx.strokeRect(x, PLAYER_Y, PLAYER_WIDTH, PLAYER_HEIGHT);
       ctx.fillStyle = '#10b981';
       ctx.font = '10px "Chakra Petch", monospace';
-      ctx.fillText(`PLAYER (L${state.playerLane})`, x, PLAYER_Y - 6);
+      ctx.fillText(`PLAYER (L${state.playerLane})`, x, PLAYER_Y - 14);
       ctx.restore();
     }
   }
@@ -481,6 +647,7 @@
     state.paused = !state.paused;
     if (state.paused) {
       runPauseStartTime = performance.now();
+      stopJevLoop();
       if (pauseScreen) pauseScreen.classList.remove('hidden');
       if (devStatsVisible) updateDevPanel(performance.now());
     } else {
@@ -491,6 +658,7 @@
       lastFrameTime = performance.now();
       if (pauseScreen) pauseScreen.classList.add('hidden');
       if (devStatsVisible) updateDevPanel(performance.now());
+      if (jevAutopilotActive) startJevLoop();
       requestAnimationFrame(gameLoop);
     }
   }
@@ -503,7 +671,24 @@
     render();
     lastFrameTime = performance.now();
     if (devStatsVisible) updateDevPanel(performance.now());
+    if (jevAutopilotActive) startJevLoop();
     requestAnimationFrame(gameLoop);
+  }
+
+  // JEV Autopilot Control Listeners
+  if (jevAiBtn) {
+    jevAiBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setJevAutopilot(!jevAutopilotActive);
+      jevAiBtn.blur();
+    });
+  }
+
+  if (devToggleJev) {
+    devToggleJev.addEventListener('change', function () {
+      setJevAutopilot(devToggleJev.checked);
+      devToggleJev.blur();
+    });
   }
 
   // Dev Stats Control Listeners
@@ -553,6 +738,13 @@
   }
 
   document.addEventListener('keydown', function (e) {
+    // JEV Autopilot hotkey toggle (J key)
+    if (e.key === 'j' || e.key === 'J') {
+      e.preventDefault();
+      setJevAutopilot(!jevAutopilotActive);
+      return;
+    }
+
     // Dev Stats hotkey toggle (` or ~ or F2)
     if (e.key === '`' || e.key === '~' || e.key === 'F2') {
       e.preventDefault();
@@ -560,7 +752,7 @@
       return;
     }
 
-    // Ignore game keys if the focus is on a dev panel control
+    // Ignore game keys if the focus is on an input or button inside dev panel
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') && e.target.closest('#dev-panel')) {
       return;
     }
