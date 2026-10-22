@@ -1,0 +1,595 @@
+/* ==========================================================================
+   JEV AI Autopilot & Telemetry Cards
+   ========================================================================== */
+.dev-col-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* JEV Hero Decision Banner */
+.jev-hero-card {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.35) 0%, rgba(30, 27, 75, 0.5) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 10px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jev-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jev-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e9d5ff;
+  letter-spacing: 0.8px;
+}
+
+.jev-hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jev-latency-tag {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #38bdf8;
+  font-variant-numeric: tabular-nums;
+}
+
+.jev-decision-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jev-decision-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #a855f7;
+}
+
+.jev-decision-value {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f3e8ff;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+  line-height: 1.1;
+}
+
+.jev-decision-value.action-left {
+  color: #38bdf8;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.jev-decision-value.action-right {
+  color: #c084fc;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.6);
+}
+
+.jev-decision-value.action-stay {
+  color: #34d399;
+  text-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
+}
+
+.jev-decision-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.jev-decision-meta strong {
+  color: #f1f5f9;
+}
+
+/* JEV API Latency & Degradation Chart Card */
+.jev-timing-card {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 5px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timing-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timing-icon {
+  font-size: 11px;
+}
+
+.health-tag {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  transition: all 0.25s ease;
+}
+
+.health-tag.tag-stable {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.2);
+}
+
+.health-tag.tag-elevated {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.2);
+}
+
+.health-tag.tag-degrade {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+  animation: pulse-degrade 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-degrade {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 3px rgba(239, 68, 68, 0.2);
+  }
+}
+
+.timing-metrics-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.timing-meta-metric {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 9px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.timing-meta-metric strong {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.timing-chart-container {
+  position: relative;
+  width: 100%;
+  height: 46px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+#jev-latency-chart {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.timing-chart-labels {
+  position: absolute;
+  bottom: 2px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  font-size: 7.5px;
+  font-family: 'Chakra Petch', monospace;
+}
+
+.chart-label-thresh {
+  color: rgba(248, 113, 113, 0.75);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.chart-label-trend {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* JEV Probabilities Distribution Card */
+.jev-prob-card {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.jev-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.jev-sub-text {
+  font-size: 8.5px;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+}
+
+.jev-prob-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jev-prob-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 4px;
+  padding: 3px 6px;
+  transition: all 0.2s ease;
+}
+
+.jev-prob-row.active-choice {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.prob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.prob-val {
+  font-family: 'Chakra Petch', monospace;
+  font-weight: 700;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+}
+
+.prob-bar-track {
+  height: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.prob-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#prob-bar-left {
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+
+#prob-bar-stay {
+  background: linear-gradient(90deg, #059669, #34d399);
+}
+
+#prob-bar-right {
+  background: linear-gradient(90deg, #7c3aed, #c084fc);
+}
+
+/* JEV Road Hazard Perception Card */
+.jev-hazard-card {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jev-hazard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.hazard-cell {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.hazard-cell.hazard-critical {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.hazard-cell.hazard-approaching {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.hazard-cell.hazard-clear {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.hazard-lane-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.hazard-status {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.hazard-cell.hazard-critical .hazard-status {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+}
+
+.hazard-cell.hazard-approaching .hazard-status {
+  color: #fbbf24;
+}
+
+/* JEV Tuning & Controls */
+.jev-controls-card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.jev-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jev-stat-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mini-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.mini-val {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.jev-interval-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  max-width: 215px;
+  min-width: 170px;
+}
+
+.interval-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.interval-val-badge {
+  font-family: 'Chakra Petch', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 4px;
+  padding: 0 5px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+.interval-slider-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.interval-range {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  margin: 1px 0;
+  transition: background 0.15s ease;
+}
+
+.interval-range:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.interval-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #c084fc;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 8px rgba(192, 132, 252, 0.9);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.interval-range::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 12px rgba(192, 132, 252, 1);
+}
+
+.interval-range::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #c084fc;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 8px rgba(192, 132, 252, 0.9);
+  cursor: pointer;
+}
+
+.interval-buttons {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+}
+
+.interval-btn {
+  margin: 0;
+  padding: 1px 2px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 8.5px;
+  font-weight: 700;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 0.15s ease;
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+
+.interval-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.14);
+  transform: none;
+}
+
+.interval-btn.active {
+  background: rgba(168, 85, 247, 0.35);
+  border-color: #a855f7;
+  color: #f3e8ff;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+}
+
+.jev-main-toggle {
+  margin-left: auto;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+
+/* Tab Views */
+.view-jev #col-game-stats {
+  display: none !important;
+}
+
+.view-game #col-jev-main {
+  display: none !important;
+}
+
+.view-game #col-game-stats {
+  width: 100% !important;
+}
+
+/* Responsive Handling */
+@media (max-width: 1140px) {
+  #dev-panel {
+    width: 650px;
+  }
+}
+
+@media (max-width: 1060px) {
+  #game-wrapper.dev-open {
+    flex-direction: column;
+    align-items: center;
+  }
+  #dev-panel {
+    width: 400px;
+    height: auto;
+    max-height: 440px;
+    overflow-y: auto;
+  }
+  .dev-panel-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .dev-col-compact {
+    width: 100%;
+  }
+}
