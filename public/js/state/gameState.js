@@ -4,6 +4,8 @@ export const gameState = {
   running: false,
   paused: false,
   playerLane: 1,
+  playerRenderX: 200,
+  playerTilt: 0,
   obstacles: [],
   score: 0,
   speed: 4,
@@ -83,6 +85,8 @@ export function resetGameState() {
   gameState.running = true;
   gameState.paused = false;
   gameState.playerLane = 1;
+  gameState.playerRenderX = 200;
+  gameState.playerTilt = 0;
   gameState.obstacles = [];
   gameState.score = 0;
   gameState.speed = 4;

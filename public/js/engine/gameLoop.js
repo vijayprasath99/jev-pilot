@@ -1,8 +1,9 @@
-import { CANVAS_WIDTH, CANVAS_HEIGHT, HIGH_SCORE_KEY } from '../config/constants.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, HIGH_SCORE_KEY, PLAYER_Y, PLAYER_HEIGHT, laneCenterX } from '../config/constants.js';
 import { gameState, devSettings, metrics, jevState, resetGameState } from '../state/gameState.js';
 import { drawRoad } from '../entities/road.js';
 import { drawPlayer, movePlayer } from '../entities/player.js';
 import { spawnObstacle, updateObstacles, drawObstacles } from '../entities/obstacle.js';
+import { particleSystem } from '../entities/particles.js';
 import { checkCollisions } from './physics.js';
 import { updateHud, showGameOver, showPauseScreen, hideAllOverlays } from '../ui/hud.js';
 import { updateDevPanel } from '../ui/devPanel.js';
@@ -30,13 +31,26 @@ export function render() {
   if (!ctx) return;
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   drawRoad(ctx, gameState.roadLineOffset);
-  drawObstacles(ctx, gameState.obstacles, devSettings.showHitboxes);
-  drawPlayer(ctx, gameState.playerLane, jevState.autopilotActive, devSettings);
+  particleSystem.drawSpeedStreaks(ctx);
+  drawObstacles(ctx, gameState.obstacles, devSettings.showHitboxes, jevState.autopilotActive, gameState.playerLane);
+  particleSystem.drawParticles(ctx);
+  drawPlayer(ctx, gameState.playerLane, jevState.autopilotActive, devSettings, gameState.playerRenderX, gameState.playerTilt);
 }
 
 function update() {
   gameState.frame++;
-  gameState.roadLineOffset = (gameState.roadLineOffset + gameState.speed) % 40;
+  gameState.roadLineOffset = (gameState.roadLineOffset + gameState.speed) % 44;
+
+  // Smooth horizontal interpolation towards target lane
+  const targetX = laneCenterX(gameState.playerLane);
+  const diffX = targetX - gameState.playerRenderX;
+  gameState.playerRenderX += diffX * 0.22;
+  // Dynamic lean / tilt angle (banking into turn)
+  gameState.playerTilt = Math.max(-0.1, Math.min(0.1, diffX * 0.0035));
+
+  // Particle updates
+  particleSystem.emitExhaust(gameState.playerRenderX, PLAYER_Y + PLAYER_HEIGHT - 6, jevState.autopilotActive, gameState.speed);
+  particleSystem.update(gameState.speed);
 
   gameState.spawnTimer++;
   if (gameState.spawnTimer >= gameState.spawnInterval) {
@@ -50,8 +64,11 @@ function update() {
 
   if (checkCollisions(gameState.playerLane, gameState.obstacles)) {
     if (!devSettings.godMode) {
+      particleSystem.emitSparks(gameState.playerRenderX, PLAYER_Y + 20, 28, 'rgba(239, 68, 68,');
       endGame();
       return;
+    } else {
+      particleSystem.emitSparks(gameState.playerRenderX, PLAYER_Y + 20, 8, 'rgba(251, 191, 36,');
     }
   }
 
@@ -106,6 +123,7 @@ export function gameLoop(timestamp = performance.now()) {
 export function startGame() {
   hideAllOverlays();
   resetGameState();
+  particleSystem.clear();
   render();
   metrics.lastFrameTime = performance.now();
   if (devSettings.statsVisible) updateDevPanel();
