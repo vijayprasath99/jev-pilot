@@ -71,6 +71,16 @@
   const devJevLatencyEl = document.getElementById('dev-jev-latency');
   const devJevModelEl = document.getElementById('dev-jev-model');
 
+  // JEV API Timing & Latency Degradation Elements
+  const jevHealthTag = document.getElementById('jev-health-tag');
+  const jevTimingCur = document.getElementById('jev-timing-cur');
+  const jevTimingAvg = document.getElementById('jev-timing-avg');
+  const jevTimingMin = document.getElementById('jev-timing-min');
+  const jevTimingMax = document.getElementById('jev-timing-max');
+  const jevLatencyTrend = document.getElementById('jev-latency-trend');
+  const jevLatencyCanvas = document.getElementById('jev-latency-chart');
+  const jevLatencyCtx = jevLatencyCanvas ? jevLatencyCanvas.getContext('2d') : null;
+
   // Probabilities DOM Elements
   const probValLeft = document.getElementById('prob-val-left');
   const probValStay = document.getElementById('prob-val-stay');
@@ -158,6 +168,8 @@
   let jevQueryCount = 0;
   let jevCurrentProbabilities = { left: 0, stay: 0, right: 0 };
   let jevCurrentHazards = { 0: null, 1: null, 2: null };
+  let jevLatencyHistory = []; // stores recent API query latency in ms (max 30 items)
+  let jevHealthState = 'STABLE';
 
   // Fetch initial config from server
   fetch('/api/jev/config')
@@ -182,6 +194,160 @@
     const seconds = totalSeconds % 60;
     const tenths = Math.floor((ms % 1000) / 100);
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${tenths}`;
+  }
+
+  // Draw JEV API Latency & Degradation Trend Chart
+  function drawLatencyChart() {
+    if (!jevLatencyCanvas || !jevLatencyCtx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = jevLatencyCanvas.getBoundingClientRect();
+    const displayW = Math.round(rect.width) || 440;
+    const displayH = Math.round(rect.height) || 46;
+
+    if (jevLatencyCanvas.width !== displayW * dpr || jevLatencyCanvas.height !== displayH * dpr) {
+      jevLatencyCanvas.width = displayW * dpr;
+      jevLatencyCanvas.height = displayH * dpr;
+    }
+
+    jevLatencyCtx.save();
+    jevLatencyCtx.scale(dpr, dpr);
+    jevLatencyCtx.clearRect(0, 0, displayW, displayH);
+
+    const SLA_THRESHOLD = 500; // 500ms SLA degradation line
+    const padTop = 6;
+    const padBottom = 12;
+    const padLeft = 8;
+    const padRight = 8;
+    const plotH = displayH - padTop - padBottom;
+    const plotW = displayW - padLeft - padRight;
+
+    if (jevLatencyHistory.length === 0) {
+      jevLatencyCtx.fillStyle = '#64748b';
+      jevLatencyCtx.font = '9.5px "Chakra Petch", monospace';
+      jevLatencyCtx.textAlign = 'center';
+      jevLatencyCtx.textBaseline = 'middle';
+      jevLatencyCtx.fillText('Awaiting JEV API queries...', displayW / 2, displayH / 2);
+      jevLatencyCtx.restore();
+      return;
+    }
+
+    const maxVal = Math.max(SLA_THRESHOLD + 40, ...jevLatencyHistory);
+    const maxY = Math.ceil(maxVal / 50) * 50;
+
+    const getY = (val) => displayH - padBottom - (Math.min(val, maxY) / maxY) * plotH;
+    const getX = (index, total) => padLeft + (index / Math.max(total - 1, 1)) * plotW;
+
+    // 1. Subtle 250ms reference guideline
+    if (maxY > 250) {
+      const y250 = getY(250);
+      jevLatencyCtx.beginPath();
+      jevLatencyCtx.setLineDash([2, 4]);
+      jevLatencyCtx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+      jevLatencyCtx.lineWidth = 1;
+      jevLatencyCtx.moveTo(padLeft, y250);
+      jevLatencyCtx.lineTo(displayW - padRight, y250);
+      jevLatencyCtx.stroke();
+      jevLatencyCtx.setLineDash([]);
+    }
+
+    // 2. Dashed 500ms SLA threshold line
+    const y500 = getY(SLA_THRESHOLD);
+    jevLatencyCtx.beginPath();
+    jevLatencyCtx.setLineDash([3, 3]);
+    jevLatencyCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+    jevLatencyCtx.lineWidth = 1;
+    jevLatencyCtx.moveTo(padLeft, y500);
+    jevLatencyCtx.lineTo(displayW - padRight, y500);
+    jevLatencyCtx.stroke();
+    jevLatencyCtx.setLineDash([]);
+
+    const count = jevLatencyHistory.length;
+
+    // 3. Smooth Area Gradient Fill under line
+    jevLatencyCtx.beginPath();
+    jevLatencyCtx.moveTo(getX(0, count), getY(jevLatencyHistory[0]));
+    for (let i = 1; i < count; i++) {
+      jevLatencyCtx.lineTo(getX(i, count), getY(jevLatencyHistory[i]));
+    }
+    jevLatencyCtx.lineTo(getX(count - 1, count), displayH - padBottom);
+    jevLatencyCtx.lineTo(getX(0, count), displayH - padBottom);
+    jevLatencyCtx.closePath();
+
+    const areaGrad = jevLatencyCtx.createLinearGradient(0, padTop, 0, displayH - padBottom);
+    if (jevHealthState === 'DEGRADING') {
+      areaGrad.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
+      areaGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+    } else if (jevHealthState === 'ELEVATED') {
+      areaGrad.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
+      areaGrad.addColorStop(1, 'rgba(251, 191, 36, 0.0)');
+    } else {
+      areaGrad.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+      areaGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+    }
+    jevLatencyCtx.fillStyle = areaGrad;
+    jevLatencyCtx.fill();
+
+    // 4. Stroke line with neon glow
+    jevLatencyCtx.save();
+    jevLatencyCtx.beginPath();
+    jevLatencyCtx.moveTo(getX(0, count), getY(jevLatencyHistory[0]));
+    for (let i = 1; i < count; i++) {
+      jevLatencyCtx.lineTo(getX(i, count), getY(jevLatencyHistory[i]));
+    }
+
+    if (jevHealthState === 'DEGRADING') {
+      jevLatencyCtx.strokeStyle = '#f87171';
+      jevLatencyCtx.shadowColor = '#ef4444';
+    } else if (jevHealthState === 'ELEVATED') {
+      jevLatencyCtx.strokeStyle = '#fbbf24';
+      jevLatencyCtx.shadowColor = '#f59e0b';
+    } else {
+      jevLatencyCtx.strokeStyle = '#38bdf8';
+      jevLatencyCtx.shadowColor = '#0284c7';
+    }
+    jevLatencyCtx.shadowBlur = 6;
+    jevLatencyCtx.lineWidth = 2;
+    jevLatencyCtx.stroke();
+    jevLatencyCtx.restore();
+
+    // 5. Data Points
+    for (let i = 0; i < count; i++) {
+      const px = getX(i, count);
+      const py = getY(jevLatencyHistory[i]);
+      const val = jevLatencyHistory[i];
+      const isLatest = (i === count - 1);
+
+      jevLatencyCtx.beginPath();
+      const r = isLatest ? 3.5 : 2;
+      jevLatencyCtx.arc(px, py, r, 0, Math.PI * 2);
+
+      if (val >= SLA_THRESHOLD) {
+        jevLatencyCtx.fillStyle = '#ef4444';
+      } else if (val >= 350) {
+        jevLatencyCtx.fillStyle = '#fbbf24';
+      } else {
+        jevLatencyCtx.fillStyle = '#38bdf8';
+      }
+      jevLatencyCtx.fill();
+
+      if (isLatest) {
+        // Inner white dot
+        jevLatencyCtx.beginPath();
+        jevLatencyCtx.arc(px, py, 1.5, 0, Math.PI * 2);
+        jevLatencyCtx.fillStyle = '#ffffff';
+        jevLatencyCtx.fill();
+
+        // Outer glow ring
+        jevLatencyCtx.beginPath();
+        jevLatencyCtx.arc(px, py, 6, 0, Math.PI * 2);
+        jevLatencyCtx.strokeStyle = val >= SLA_THRESHOLD ? 'rgba(239, 68, 68, 0.7)' : 'rgba(56, 189, 248, 0.7)';
+        jevLatencyCtx.lineWidth = 1.2;
+        jevLatencyCtx.stroke();
+      }
+    }
+
+    jevLatencyCtx.restore();
   }
 
   function updateDevPanel(now) {
@@ -277,6 +443,78 @@
     if (devJevModelEl) {
       devJevModelEl.textContent = jevModelName;
     }
+
+    // 4b. JEV API Latency History, Health & Degradation Analysis
+    if (jevLatencyHistory.length > 0) {
+      const cur = jevLatencyHistory[jevLatencyHistory.length - 1];
+      const min = Math.min(...jevLatencyHistory);
+      const max = Math.max(...jevLatencyHistory);
+      const avg = Math.round(jevLatencyHistory.reduce((a, b) => a + b, 0) / jevLatencyHistory.length);
+
+      if (jevTimingCur) jevTimingCur.textContent = cur + 'ms';
+      if (jevTimingAvg) jevTimingAvg.textContent = avg + 'ms';
+      if (jevTimingMin) jevTimingMin.textContent = min + 'ms';
+      if (jevTimingMax) jevTimingMax.textContent = max + 'ms';
+
+      // Trend and Degradation Detection
+      let trendText = 'Steady';
+      if (jevLatencyHistory.length >= 4) {
+        const recentSlice = jevLatencyHistory.slice(-3);
+        const olderSlice = jevLatencyHistory.slice(0, -3);
+        const recentAvg = recentSlice.reduce((a, b) => a + b, 0) / recentSlice.length;
+        const olderAvg = olderSlice.reduce((a, b) => a + b, 0) / olderSlice.length;
+        const diff = Math.round(recentAvg - olderAvg);
+
+        if (diff > 35) {
+          trendText = `▲ +${diff}ms (Slowing)`;
+        } else if (diff < -35) {
+          trendText = `▼ ${diff}ms (Faster)`;
+        } else {
+          trendText = '→ Steady';
+        }
+
+        // Degradation criteria:
+        // 1. Recent latency average exceeds 500ms SLA
+        // 2. Or single latency spike > 650ms
+        // 3. Or recent queries are > 1.4x higher than older baseline and > 350ms
+        if (recentAvg > 500 || cur > 650 || (recentAvg > 350 && recentAvg > 1.4 * olderAvg)) {
+          jevHealthState = 'DEGRADING';
+        } else if (recentAvg > 320 || cur > 400) {
+          jevHealthState = 'ELEVATED';
+        } else {
+          jevHealthState = 'STABLE';
+        }
+      } else {
+        if (cur > 500) {
+          jevHealthState = 'DEGRADING';
+        } else if (cur > 320) {
+          jevHealthState = 'ELEVATED';
+        } else {
+          jevHealthState = 'STABLE';
+        }
+      }
+
+      if (jevLatencyTrend) jevLatencyTrend.textContent = 'Trend: ' + trendText;
+      if (jevHealthTag) {
+        jevHealthTag.textContent = jevHealthState;
+        jevHealthTag.className = 'health-tag ' + (
+          jevHealthState === 'DEGRADING' ? 'tag-degrade' :
+          jevHealthState === 'ELEVATED' ? 'tag-elevated' : 'tag-stable'
+        );
+      }
+    } else {
+      if (jevTimingCur) jevTimingCur.textContent = '--';
+      if (jevTimingAvg) jevTimingAvg.textContent = '--';
+      if (jevTimingMin) jevTimingMin.textContent = '--';
+      if (jevTimingMax) jevTimingMax.textContent = '--';
+      if (jevLatencyTrend) jevLatencyTrend.textContent = 'Trend: --';
+      if (jevHealthTag) {
+        jevHealthTag.textContent = 'STABLE';
+        jevHealthTag.className = 'health-tag tag-stable';
+      }
+    }
+
+    drawLatencyChart();
 
     // 5. JEV Probabilities Breakdown
     const pLeft = Math.round((jevCurrentProbabilities.left || 0) * 100);
@@ -400,6 +638,7 @@
       obstacles: obstaclesAhead
     };
 
+    const fetchStart = performance.now();
     try {
       const res = await fetch('/api/jev/action', {
         method: 'POST',
@@ -413,6 +652,12 @@
         jevLastAction = data.action || 'stay';
         jevLastConfidence = data.confidence;
         jevLastLatency = data.latencyMs;
+
+        if (typeof data.latencyMs === 'number') {
+          jevLatencyHistory.push(data.latencyMs);
+          if (jevLatencyHistory.length > 30) jevLatencyHistory.shift();
+        }
+
         if (data.model) jevModelName = data.model;
         if (data.probabilities) jevCurrentProbabilities = data.probabilities;
         if (data.laneDistance) jevCurrentHazards = data.laneDistance;
@@ -425,9 +670,21 @@
             movePlayer(1);
           }
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const latency = typeof errData.latencyMs === 'number'
+          ? errData.latencyMs
+          : Math.round(performance.now() - fetchStart);
+        jevLastLatency = latency;
+        jevLatencyHistory.push(latency);
+        if (jevLatencyHistory.length > 30) jevLatencyHistory.shift();
       }
     } catch (err) {
       console.warn('JEV AI query error:', err);
+      const elapsed = Math.round(performance.now() - fetchStart);
+      jevLastLatency = elapsed;
+      jevLatencyHistory.push(elapsed);
+      if (jevLatencyHistory.length > 30) jevLatencyHistory.shift();
     } finally {
       jevIsRequestInProgress = false;
       updateDevPanel(performance.now());
@@ -879,4 +1136,15 @@
 
   render();
   updateDevPanel(performance.now());
+
+  // Auto-activate JEV if specified in URL query params
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('start') === 'true') {
+      startGame();
+    }
+    if (params.get('autojev') === 'true' || params.get('jev') === 'true') {
+      setJevMode(true);
+    }
+  } catch (e) {}
 })();

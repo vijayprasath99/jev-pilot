@@ -174,6 +174,30 @@
           </div>
         </section>
 
+        <!-- JEV API Timing & Latency Degradation Chart Card -->
+        <section class="jev-timing-card">
+          <div class="jev-card-header">
+            <div class="timing-title-wrap">
+              <span class="timing-icon">📈</span>
+              <span>API LATENCY &amp; HEALTH</span>
+              <span class="health-tag tag-stable" id="jev-health-tag">STABLE</span>
+            </div>
+            <div class="timing-metrics-wrap">
+              <span class="timing-meta-metric">Cur: <strong id="jev-timing-cur">--</strong></span>
+              <span class="timing-meta-metric">Avg: <strong id="jev-timing-avg">--</strong></span>
+              <span class="timing-meta-metric">Min: <strong id="jev-timing-min">--</strong></span>
+              <span class="timing-meta-metric">Max: <strong id="jev-timing-max">--</strong></span>
+            </div>
+          </div>
+          <div class="timing-chart-container">
+            <canvas id="jev-latency-chart" width="440" height="46"></canvas>
+            <div class="timing-chart-labels">
+              <span class="chart-label-thresh">500ms SLA</span>
+              <span class="chart-label-trend" id="jev-latency-trend">Trend: Stable</span>
+            </div>
+          </div>
+        </section>
+
         <!-- JEV Probabilities Distribution Card -->
         <section class="jev-prob-card">
           <div class="jev-card-header">
