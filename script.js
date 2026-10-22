@@ -31,8 +31,10 @@
   const finalScoreEl = document.getElementById('final-score');
   const finalHighScoreEl = document.getElementById('final-high-score');
 
-  // Dev Stats Dashboard DOM Elements
-  const devStatsBtn = document.getElementById('dev-stats-btn');
+  // Single Unified JEV Mode Toggle Button
+  const jevModeBtn = document.getElementById('jev-mode-btn');
+
+  // Dashboard DOM Elements
   const devPanel = document.getElementById('dev-panel');
   const devPanelBody = document.getElementById('dev-panel-body');
   const devPanelCloseBtn = document.getElementById('dev-panel-close-btn');
@@ -62,7 +64,6 @@
   const devResetHighscoreBtn = document.getElementById('dev-reset-highscore-btn');
 
   // JEV Autopilot AI DOM Elements
-  const jevAiBtn = document.getElementById('jev-ai-btn');
   const devToggleJev = document.getElementById('dev-toggle-jev');
   const devJevStatusEl = document.getElementById('dev-jev-status');
   const devJevActionBanner = document.getElementById('dev-jev-action-banner');
@@ -144,7 +145,8 @@
   let lastDevDomUpdate = 0;
   let devIdleInterval = null;
 
-  // JEV AI Autopilot State
+  // Unified JEV Mode State (Autopilot + Telemetry Dashboard)
+  let jevModeActive = false;
   let jevAutopilotActive = false;
   let jevQueryIntervalMs = 1000; // default 1 second
   let jevTimer = null;
@@ -239,7 +241,7 @@
 
     // 4. JEV Autopilot AI Hero & Telemetry
     if (devJevStatusEl) {
-      if (jevAutopilotActive) {
+      if (jevModeActive) {
         devJevStatusEl.textContent = jevIsRequestInProgress ? 'THINKING...' : 'ACTIVE';
         devJevStatusEl.className = 'dev-badge badge-running';
       } else {
@@ -329,21 +331,29 @@
     if (tabGameView) tabGameView.classList.toggle('active', viewMode === 'game');
   }
 
-  function setDevStatsVisible(show) {
-    devStatsVisible = show;
-    if (devStatsBtn) {
-      devStatsBtn.classList.toggle('active', show);
-      devStatsBtn.setAttribute('aria-expanded', String(show));
+  // Unified JEV Mode: Activates Autopilot AND opens the telemetry dashboard side-by-side
+  function setJevMode(enabled) {
+    jevModeActive = enabled;
+    jevAutopilotActive = enabled;
+    devStatsVisible = enabled;
+
+    if (jevModeBtn) {
+      jevModeBtn.classList.toggle('active', enabled);
+      jevModeBtn.setAttribute('aria-pressed', String(enabled));
+    }
+    if (devToggleJev) {
+      devToggleJev.checked = enabled;
     }
     if (devPanel) {
-      devPanel.classList.toggle('hidden', !show);
+      devPanel.classList.toggle('hidden', !enabled);
     }
     const gameWrapper = document.getElementById('game-wrapper');
     if (gameWrapper) {
-      gameWrapper.classList.toggle('dev-open', show);
+      gameWrapper.classList.toggle('dev-open', enabled);
     }
 
-    if (show) {
+    if (enabled) {
+      startJevLoop();
       updateDevPanel(performance.now());
       if (!state.running || state.paused) {
         if (!devIdleInterval) {
@@ -355,6 +365,7 @@
         }
       }
     } else {
+      stopJevLoop();
       if (devIdleInterval) {
         clearInterval(devIdleInterval);
         devIdleInterval = null;
@@ -440,24 +451,6 @@
       clearInterval(jevTimer);
       jevTimer = null;
     }
-  }
-
-  function setJevAutopilot(enabled) {
-    jevAutopilotActive = enabled;
-    if (jevAiBtn) {
-      jevAiBtn.classList.toggle('active', enabled);
-      jevAiBtn.setAttribute('aria-pressed', String(enabled));
-    }
-    if (devToggleJev) {
-      devToggleJev.checked = enabled;
-    }
-
-    if (enabled) {
-      startJevLoop();
-    } else {
-      stopJevLoop();
-    }
-    updateDevPanel(performance.now());
   }
 
   function resetState() {
@@ -745,7 +738,7 @@
       lastFrameTime = performance.now();
       if (pauseScreen) pauseScreen.classList.add('hidden');
       if (devStatsVisible) updateDevPanel(performance.now());
-      if (jevAutopilotActive) startJevLoop();
+      if (jevModeActive) startJevLoop();
       requestAnimationFrame(gameLoop);
     }
   }
@@ -758,23 +751,31 @@
     render();
     lastFrameTime = performance.now();
     if (devStatsVisible) updateDevPanel(performance.now());
-    if (jevAutopilotActive) startJevLoop();
+    if (jevModeActive) startJevLoop();
     requestAnimationFrame(gameLoop);
   }
 
-  // JEV Autopilot Control Listeners
-  if (jevAiBtn) {
-    jevAiBtn.addEventListener('click', function (e) {
+  // Unified JEV Mode Control Listeners
+  if (jevModeBtn) {
+    jevModeBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      setJevAutopilot(!jevAutopilotActive);
-      jevAiBtn.blur();
+      setJevMode(!jevModeActive);
+      jevModeBtn.blur();
     });
   }
 
   if (devToggleJev) {
     devToggleJev.addEventListener('change', function () {
-      setJevAutopilot(devToggleJev.checked);
+      setJevMode(devToggleJev.checked);
       devToggleJev.blur();
+    });
+  }
+
+  if (devPanelCloseBtn) {
+    devPanelCloseBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setJevMode(false);
+      devPanelCloseBtn.blur();
     });
   }
 
@@ -790,7 +791,7 @@
       if (ms) {
         jevQueryIntervalMs = ms;
         intervalButtons.forEach(b => b.classList.toggle('active', b === this));
-        if (jevAutopilotActive) {
+        if (jevModeActive) {
           stopJevLoop();
           startJevLoop();
         }
@@ -798,23 +799,7 @@
     });
   });
 
-  // Dev Stats Control Listeners
-  if (devStatsBtn) {
-    devStatsBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      setDevStatsVisible(!devStatsVisible);
-      devStatsBtn.blur();
-    });
-  }
-
-  if (devPanelCloseBtn) {
-    devPanelCloseBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      setDevStatsVisible(false);
-      devPanelCloseBtn.blur();
-    });
-  }
-
+  // Tools Control Listeners
   if (devToggleHitboxes) {
     devToggleHitboxes.addEventListener('change', function () {
       devSettings.showHitboxes = devToggleHitboxes.checked;
@@ -845,17 +830,10 @@
   }
 
   document.addEventListener('keydown', function (e) {
-    // JEV Autopilot hotkey toggle (J key)
-    if (e.key === 'j' || e.key === 'J') {
+    // Single Unified JEV Mode hotkey toggle (J key or Backtick/~)
+    if (e.key === 'j' || e.key === 'J' || e.key === '`' || e.key === '~') {
       e.preventDefault();
-      setJevAutopilot(!jevAutopilotActive);
-      return;
-    }
-
-    // Dev Stats hotkey toggle (` or ~ or F2)
-    if (e.key === '`' || e.key === '~' || e.key === 'F2') {
-      e.preventDefault();
-      setDevStatsVisible(!devStatsVisible);
+      setJevMode(!jevModeActive);
       return;
     }
 

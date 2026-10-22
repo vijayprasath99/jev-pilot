@@ -62,7 +62,7 @@ body {
   position: absolute;
   top: 14px;
   left: 14px;
-  right: 160px;
+  right: 96px; /* clean space for single JEV toggle */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -74,7 +74,7 @@ body {
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 5px 11px;
+  padding: 5px 12px;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 12px;
@@ -96,33 +96,27 @@ body {
   color: #fbbf24;
 }
 
-/* Top-Right Action Controls (JEV AI + Dev Stats) */
-.top-controls {
+/* Single Unified JEV Toggle Button (Auto toggles Autopilot & Dev Telemetry) */
+.hud-jev-toggle {
   position: absolute;
   top: 14px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  right: 14px;
   z-index: 25;
-}
-
-.hud-action-btn {
   margin-top: 0;
-  padding: 5px 10px;
+  padding: 5px 12px;
   font-family: 'Chakra Petch', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.45);
   border-radius: 9999px;
-  color: #94a3b8;
+  color: #d8b4fe;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   cursor: pointer;
   pointer-events: auto;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -130,76 +124,34 @@ body {
   user-select: none;
 }
 
-.hud-action-btn:hover {
-  color: #f8fafc;
+.hud-jev-toggle:hover {
+  border-color: rgba(168, 85, 247, 0.8);
+  background: rgba(46, 16, 101, 0.7);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
+  color: #f3e8ff;
   transform: translateY(-1px);
 }
 
-.hud-action-btn:active {
+.hud-jev-toggle:active {
   transform: translateY(1px);
 }
 
-/* DEV Stats Button */
-.hud-action-btn.dev-btn {
-  border-color: rgba(56, 189, 248, 0.35);
-}
-
-.hud-action-btn.dev-btn:hover {
-  border-color: rgba(56, 189, 248, 0.8);
-  background: rgba(30, 41, 59, 0.95);
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
-}
-
-.hud-action-btn.dev-btn.active {
-  background: rgba(14, 165, 233, 0.22);
-  border-color: #38bdf8;
-  color: #38bdf8;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
-}
-
-.hud-dev-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #64748b;
-  transition: all 0.2s ease;
-}
-
-.hud-action-btn.dev-btn.active .hud-dev-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
-  animation: devPulse 1.6s infinite;
-}
-
-/* JEV AI Autopilot Button */
-.hud-action-btn.jev-btn {
-  border-color: rgba(168, 85, 247, 0.4);
-  color: #d8b4fe;
-}
-
-.hud-action-btn.jev-btn:hover {
-  border-color: rgba(168, 85, 247, 0.8);
-  background: rgba(46, 16, 101, 0.65);
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
-  color: #f3e8ff;
-}
-
-.hud-action-btn.jev-btn.active {
-  background: rgba(168, 85, 247, 0.3);
+.hud-jev-toggle.active {
+  background: rgba(168, 85, 247, 0.32);
   border-color: #c084fc;
   color: #f3e8ff;
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.65);
 }
 
 .hud-ai-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #7e22ce;
   transition: all 0.2s ease;
 }
 
-.hud-action-btn.jev-btn.active .hud-ai-dot {
+.hud-jev-toggle.active .hud-ai-dot {
   background: #c084fc;
   box-shadow: 0 0 8px #c084fc;
   animation: aiPulse 1.2s infinite;
@@ -208,24 +160,6 @@ body {
 @keyframes aiPulse {
   0% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.4); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
-}
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #64748b;
-  transition: all 0.2s ease;
-}
-
-#dev-stats-btn.active .hud-dev-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
-  animation: devPulse 1.6s infinite;
-}
-
-@keyframes devPulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
   100% { transform: scale(1); opacity: 1; }
 }
 

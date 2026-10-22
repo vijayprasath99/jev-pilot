@@ -15,16 +15,10 @@
       <div>High: <span id="high-score">0</span></div>
     </div>
 
-    <div class="top-controls">
-      <button id="jev-ai-btn" class="hud-action-btn jev-btn" type="button" aria-pressed="false" title="Toggle JEV AI Autopilot (Hotkey: J)">
-        <span class="hud-ai-dot"></span>
-        <span>🤖 JEV AI</span>
-      </button>
-      <button id="dev-stats-btn" class="hud-action-btn dev-btn" type="button" aria-expanded="false" title="Toggle Dev Stats (Hotkey: ` or F2)">
-        <span class="hud-dev-dot"></span>
-        <span>DEV</span>
-      </button>
-    </div>
+    <button id="jev-mode-btn" class="hud-jev-toggle" type="button" aria-pressed="false" title="Toggle JEV Mode & Telemetry (Hotkey: J or `)">
+      <span class="hud-ai-dot"></span>
+      <span>🤖 JEV</span>
+    </button>
 
     <canvas id="game-canvas" width="400" height="600"></canvas>
 
