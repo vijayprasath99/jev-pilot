@@ -20,9 +20,13 @@
 
 <br/>
 
+<p align="center">
+  <img src="docs/images/preview-split.png" alt="JevPilot Split View: Real-Time Highway Runner with JEV Decision Telemetry" width="850" style="border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.6);" />
+</p>
+
 **JevPilot** is a high-speed 2D infinite highway runner and real-time developer telemetry laboratory. Instead of relying on slow token-by-token generative LLMs, JevPilot showcases **System One Decision Models** (**Jev** by TypeSafe AI or **Clef / Clef-flash** by Cloudflare) executing fast, single-forward-pass bounded judgments to dodge oncoming traffic at 60 FPS.
 
-[Features](#-features) • [How It Works](#-how-it-works) • [Supported Models](#-supported-models) • [Quickstart](#-quickstart) • [Configuration](#-configuration) • [Telemetry & SLA](#-developer-telemetry--sla-tracking) • [Controls](#-controls--hotkeys)
+[Features](#-features) • [Preview](#-telemetry-focus-view) • [How It Works](#-how-it-works) • [Supported Models](#-supported-models) • [Quickstart](#-quickstart) • [Configuration](#-configuration) • [Telemetry & SLA](#-developer-telemetry--sla-tracking) • [Controls](#-controls--hotkeys)
 
 </div>
 
@@ -143,6 +147,10 @@ Navigate to **`http://localhost:3000`** in your browser.
 ---
 
 ## 📊 Developer Telemetry & SLA Tracking
+
+<p align="center">
+  <img src="docs/images/telemetry-focus.png" alt="JEV AI Focus View: Real-time decision distribution, confidence breakdown, and latency sparkline" width="850" style="border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.6);" />
+</p>
 
 The right-hand cockpit panel tracks the health and reaction time of the decision pipeline:
 
