@@ -1,13 +1,13 @@
 # AGENTS.md — Developer & AI Agent Guide
 
-Welcome to the **Infinite Driver & JEV AI Autopilot** codebase. This guide provides AI agents and human developers with an architectural roadmap, conventions, key mechanics, and instructions for safely contributing to this project.
+Welcome to the **JevPilot (JEV AI Autopilot & Telemetry)** codebase. This guide provides AI agents and human developers with an architectural roadmap, conventions, key mechanics, and instructions for safely contributing to this project.
 
 ---
 
 ## 1. Project Overview
 
-**Infinite Driver** is a browser-based 2D infinite runner game where the player dodges oncoming traffic across 3 lanes.
-It integrates a real-time **JEV Autopilot AI** (powered by the JEV System One / LLM API) that analyzes road hazards ahead and autonomously steers the vehicle, paired with a live developer telemetry dashboard that visualizes model decisions, confidence, lane hazards, and latency degradation SLA tracking.
+**JevPilot** is a browser-based 2D infinite runner game where the player dodges oncoming traffic across 3 lanes.
+It integrates a real-time **JEV Autopilot AI** (powered by JEV System One or Cloudflare Clef/Clef-flash decision model APIs) that analyzes road hazards ahead and autonomously steers the vehicle, paired with a live developer telemetry dashboard that visualizes model decisions, confidence, lane hazards, and latency degradation SLA tracking.
 
 ---
 
@@ -16,7 +16,7 @@ It integrates a real-time **JEV Autopilot AI** (powered by the JEV System One / 
 The repository is cleanly partitioned into backend (`server/`) and frontend (`public/`) concerns:
 
 ```text
-unlimited_runner/
+jev-pilot/
 ├── AGENTS.md                  # This file
 ├── .env                       # Local environment variables (PORT, JEV_*)
 ├── .env.example               # Example template for environment config
